@@ -9,40 +9,14 @@
  * Props driven entirely by SimResult so the characters never fake data.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import type { SimResult } from '@/types';
 
 /* ─── Palette of Ping jellybean colors ─────────────────────────────────────── */
 const PING_COLORS = ['#FF6B6B', '#FFD93D', '#4ECDC4', '#A78BFA', '#FF8FB1', '#A3E635', '#FFA94D'];
 
-/* ─── Shared blob path helper ───────────────────────────────────────────────── */
-function BlobBody({
-  color,
-  cx,
-  cy,
-  rx = 18,
-  ry = 16,
-  className,
-}: {
-  color: string;
-  cx: number;
-  cy: number;
-  rx?: number;
-  ry?: number;
-  className?: string;
-}) {
-  return (
-    <ellipse
-      cx={cx}
-      cy={cy}
-      rx={rx}
-      ry={ry}
-      fill={color}
-      className={className}
-    />
-  );
-}
+
 
 function DotEyes({ cx, cy, eyeColor = 'white' }: { cx: number; cy: number; eyeColor?: string }) {
   return (
@@ -314,11 +288,9 @@ export function TheLeakCharacter({
 /* ─── THE CREW — hard-hat ops blob ─────────────────────────────────────────── */
 export function TheCrewCharacter({
   state = 'work',
-  index = 0,
   style,
 }: {
   state: 'work' | 'panic' | 'faint';
-  index?: number;
   style?: React.CSSProperties;
 }) {
   const reduced = useReducedMotion();

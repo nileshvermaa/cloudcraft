@@ -1,6 +1,6 @@
 'use client';
 
-import { Users, Activity } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { useGameStore } from '@/store/useGameStore';
 import { cn } from '@/lib/utils';
 
@@ -50,7 +50,7 @@ export function LoadDial() {
 
       {/* Stepped dial toggles */}
       <div className="flex items-center gap-1">
-        {STEPS.map((step, i) => {
+        {STEPS.map((step) => {
           const isSelected = step.rps === loadRps;
           return (
             <button

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, use } from 'react';
+import React, { useEffect, useRef, useState, use } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Palette } from '@/components/canvas/Palette';
@@ -23,7 +23,7 @@ interface ScenarioPageProps {
 
 export default function ScenarioPage({ params }: ScenarioPageProps) {
   const { id } = use(params);
-  const { scenario, loadScenario, result, loadBestScores, nodes, paletteTheme, sceneBg } =
+  const { loadScenario, result, loadBestScores, nodes, paletteTheme, sceneBg } =
     useGameStore();
   const [showResult, setShowResult] = useState(false);
   const [showVignette, setShowVignette] = useState(false);
@@ -38,16 +38,22 @@ export default function ScenarioPage({ params }: ScenarioPageProps) {
   }, [id, targetScenario, loadScenario, loadBestScores]);
 
   // Open dialog when simulation finishes and yields a result
+  const hasResult = result != null;
+  const isFailingGrade = hasResult && (result.grade === 'C' || result.grade === 'F');
+  const prevHasResult = useRef(hasResult);
+
   useEffect(() => {
-    if (result) {
+    if (hasResult && !prevHasResult.current) {
       setShowResult(true);
-      // Show vignette for failing grades after a brief delay
-      if (result.grade === 'C' || result.grade === 'F') {
-        const timer = setTimeout(() => setShowVignette(true), 400);
-        return () => clearTimeout(timer);
-      }
     }
-  }, [result]);
+    prevHasResult.current = hasResult;
+  }, [hasResult]);
+
+  useEffect(() => {
+    if (!isFailingGrade) return;
+    const timer = setTimeout(() => setShowVignette(true), 400);
+    return () => clearTimeout(timer);
+  }, [isFailingGrade]);
 
   const selectedNode = nodes.find((n) => n.selected);
   const sceneClass = `scene-${sceneBg}`;

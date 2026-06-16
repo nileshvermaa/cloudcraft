@@ -1,9 +1,8 @@
 'use client';
 
-import { Target, Clock, DollarSign, Shield, Wifi, Zap, Award } from 'lucide-react';
+import { Target, Clock, DollarSign, Shield, Wifi, Zap } from 'lucide-react';
 import { useGameStore } from '@/store/useGameStore';
 import { formatRps, formatMs, formatUsd } from '@/lib/utils';
-import { cn } from '@/lib/utils';
 
 export function ChallengePanel() {
   const { scenario } = useGameStore();

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
-import { ArrowLeft, Star, Lock, CheckCircle2, Play, ChevronRight, Map } from 'lucide-react';
+import { ArrowLeft, Star, CheckCircle2, Play, ChevronRight, Map } from 'lucide-react';
 import { SCENARIOS } from '@/lib/scenarios';
 import { useGameStore } from '@/store/useGameStore';
 import { Nimbus } from '@/components/cast/CastRenderer';
@@ -64,7 +64,7 @@ interface LocationCardProps {
   onStart: () => void;
 }
 
-function LocationCard({ scenario, index, bestGrade, isSelected, onSelect, onStart }: LocationCardProps) {
+function LocationCard({ scenario, bestGrade, isSelected, onSelect }: LocationCardProps) {
   const reduced = useReducedMotion();
   const colors = SCENE_COLORS[scenario.difficulty] ?? SCENE_COLORS.Beginner;
   const isCompleted = !!bestGrade;

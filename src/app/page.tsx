@@ -17,7 +17,7 @@ export default function HomePage() {
   const router = useRouter();
   const reduced = useReducedMotion();
   const { bestScores, loadBestScores, startSandbox } = useGameStore();
-  const [showScenarios, setShowScenarios] = useState(false);
+  const [showScenarios] = useState(false);
 
   useEffect(() => {
     loadBestScores();

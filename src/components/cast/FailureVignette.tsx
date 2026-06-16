@@ -156,7 +156,7 @@ export function FailureVignette({ result, show, onDismiss }: FailureVignetteProp
               {vignette === 'overworked' && (
                 <>
                   <TheCrewCharacter state="panic" />
-                  <TheCrewCharacter state="panic" index={1} style={{ left: 44 }} />
+                  <TheCrewCharacter state="panic" style={{ left: 44 }} />
                 </>
               )}
               {vignette === 'break-in' && <TheLeakCharacter state="grab" />}

@@ -15,9 +15,7 @@ export function computeAvailability(nodes: Node<ServiceNodeData>[]): number {
   const NETWORKING_TYPES = new Set([
     'loadBalancer', 'apiGateway', 'cdn', 'dns', 'rateLimiter', 'waf', 'ddosProtection'
   ]);
-  const ASYNC_TYPES = new Set([
-    'messageQueue', 'worker', 'pubSub', 'streamProcessor', 'scheduler', 'workflowOrchestrator'
-  ]);
+  // Async types (messageQueue, worker, pubSub, etc.) don't factor into the synchronous request path availability
 
   // Group nodes into tiers
   const tiers: Node<ServiceNodeData>[][] = [];
@@ -29,7 +27,6 @@ export function computeAvailability(nodes: Node<ServiceNodeData>[]): number {
   if (networkingNodes.length > 0) tiers.push(networkingNodes);
   if (computeNodes.length > 0) tiers.push(computeNodes);
   if (dataNodes.length > 0) tiers.push(dataNodes);
-  // Async nodes don't factor into the synchronous request path availability
 
   let systemAvailability = 1.0;
 

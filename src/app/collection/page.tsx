@@ -69,10 +69,10 @@ const CHARACTERS = [
     renderCharacter: () => (
       <div className="relative h-20 flex items-end justify-center gap-2">
         <div style={{ position: 'relative', width: 36, height: 44 }}>
-          <TheCrewCharacter state="work" index={0} />
+          <TheCrewCharacter state="work" />
         </div>
         <div style={{ position: 'relative', width: 36, height: 44 }}>
-          <TheCrewCharacter state="work" index={1} />
+          <TheCrewCharacter state="work" />
         </div>
       </div>
     ),
@@ -187,7 +187,7 @@ export default function CollectionPage() {
                     ) :
                     char.id === 'the-crew' ? (
                       <div style={{ position: 'relative', width: 36, height: 44 }}>
-                        <TheCrewCharacter state="work" index={0} />
+                        <TheCrewCharacter state="work" />
                       </div>
                     ) :
                     char.id === 'the-leak' ? (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Palette } from '@/components/canvas/Palette';
@@ -43,13 +43,19 @@ export default function SandboxPage() {
   }, [startSandbox, loadBestScores]);
 
   // Show vignette whenever a failing result arrives
+  const shouldShowVignette = result != null && result.grade !== 'S' && result.grade !== 'A' && result.grade !== 'B';
+  const prevShouldShow = useRef(shouldShowVignette);
   useEffect(() => {
-    if (result && result.grade !== 'S' && result.grade !== 'A' && result.grade !== 'B') {
+    if (shouldShowVignette) {
       const timer = setTimeout(() => setShowVignette(true), 600);
       return () => clearTimeout(timer);
     }
-    setShowVignette(false);
-  }, [result]);
+    // Transitioned from showing to not-showing
+    if (prevShouldShow.current && !shouldShowVignette) {
+      setShowVignette(false);
+    }
+    prevShouldShow.current = shouldShowVignette;
+  }, [shouldShowVignette]);
 
   const handlePresetChange = (presetId: string) => {
     const selected = PRESETS.find((p) => p.id === presetId);

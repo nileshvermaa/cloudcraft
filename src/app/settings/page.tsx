@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
-import { ArrowLeft, Settings, Palette, Monitor, Globe, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Settings, Palette, Monitor, Globe, Volume2 } from 'lucide-react';
 import { useGameStore } from '@/store/useGameStore';
 import type { PaletteTheme, ProviderSkin, SceneBg } from '@/types';
 
@@ -156,7 +156,7 @@ export default function SettingsPage() {
           >
             <SectionHeader icon={<Globe size={18} />} title="Provider Skin" />
             <p className="text-[12px] mb-4" style={{ color: '#9A92AD' }}>
-              Renames service tiles to a cloud provider's vernacular. Uses generic representations — no official logos or trademarks.
+              Renames service tiles to a cloud provider&apos;s vernacular. Uses generic representations — no official logos or trademarks.
             </p>
             <div className="grid grid-cols-2 gap-3">
               {PROVIDER_SKINS.map((skin) => (

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Play, RotateCcw, ArrowLeft, Loader2, Cpu } from 'lucide-react';
+import { Play, RotateCcw, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGameStore } from '@/store/useGameStore';
 import { cn } from '@/lib/utils';

@@ -34,7 +34,6 @@ export const ConduitEdge = memo(function ConduitEdge({
   const baseColor = sourceType ? CATEGORY_COLOR[CATALOG[sourceType]?.category] : '#94A3B8';
 
   // State: is this edge feeding into an overloaded node?
-  const targetId = (id.split('->')[1] ?? '').trim();
   const isBottleneck = result?.overloadedNodeIds.some(
     (nodeId) => edges_target_map.get(id) === nodeId
   ) ?? false;
