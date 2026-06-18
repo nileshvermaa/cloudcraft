@@ -262,7 +262,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({ isSimulating: true, result: null });
 
-    // Tiny async tick for the loading state to show
+    // Hold the simulating state long enough for the Pings to stream the
+    // conduits (the Run choreography) before metrics resolve.
     setTimeout(() => {
       const result = simulate(nodes, edges, constraints);
       set({ result, isSimulating: false });
@@ -281,7 +282,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         }
         toast.success('Simulation complete.');
       }
-    }, 400);
+    }, 1600);
   },
 
   reset: () => {

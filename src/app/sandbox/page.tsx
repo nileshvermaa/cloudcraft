@@ -96,26 +96,28 @@ export default function SandboxPage() {
           <div className="w-[280px] flex-shrink-0 h-full chrome-panel border-y-0 border-r-0 border-l border-[var(--color-chrome-border)] overflow-y-auto flex flex-col z-20">
             {/* Tab switcher: Config vs Cosmetics (only when no node selected) */}
             {!selectedNode && (
-              <div className="flex border-b border-[var(--color-chrome-border)]">
+              <div className="flex" style={{ borderBottom: '1px solid var(--color-panel-line)' }}>
                 <button
                   onClick={() => setShowCosmetics(false)}
-                  className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-colors ${
+                  className="flex-1 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-colors"
+                  style={
                     !showCosmetics
-                      ? 'text-teal-400 bg-teal-500/10 border-b-2 border-teal-500'
-                      : 'text-[var(--color-chrome-text)] hover:text-[var(--color-chrome-bright)]'
-                  }`}
+                      ? { color: '#1B1733', borderBottom: '2px solid #1DD3A0' }
+                      : { color: '#9A92AD' }
+                  }
                 >
                   Setup
                 </button>
                 <button
                   onClick={() => setShowCosmetics(true)}
-                  className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-1 ${
+                  className="flex-1 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1"
+                  style={
                     showCosmetics
-                      ? 'text-teal-400 bg-teal-500/10 border-b-2 border-teal-500'
-                      : 'text-[var(--color-chrome-text)] hover:text-[var(--color-chrome-bright)]'
-                  }`}
+                      ? { color: '#1B1733', borderBottom: '2px solid #1DD3A0' }
+                      : { color: '#9A92AD' }
+                  }
                 >
-                  <PaletteIcon size={10} />
+                  <PaletteIcon size={11} />
                   Style
                 </button>
               </div>
@@ -152,10 +154,10 @@ export default function SandboxPage() {
                     transition={{ type: 'spring', stiffness: 300, damping: 22 }}
                   >
                     {/* Preset Selector */}
-                    <div className="p-3.5 border-b border-[var(--color-chrome-border)] bg-slate-950/10">
+                    <div className="p-3.5" style={{ borderBottom: '1px solid var(--color-panel-line)' }}>
                       <div className="flex items-center gap-1.5 mb-2">
-                        <Compass size={11} className="text-teal-400 animate-pulse" />
-                        <h3 className="text-[10px] font-bold text-[var(--color-chrome-bright)] uppercase tracking-wider">
+                        <Compass size={12} style={{ color: '#9B5DE5' }} />
+                        <h3 className="text-[11px] font-semibold" style={{ fontFamily: 'var(--font-display)', color: '#1B1733' }}>
                           Product Preset
                         </h3>
                       </div>
@@ -163,15 +165,15 @@ export default function SandboxPage() {
                         value={preset?.id ?? 'freestyle'}
                         onValueChange={handlePresetChange}
                       >
-                        <SelectTrigger className="w-full h-8 text-[11px] bg-[var(--color-chrome-soft)] border-[var(--color-chrome-border)] text-[var(--color-chrome-bright)] focus:ring-0 focus:ring-offset-0 focus:border-teal-500">
+                        <SelectTrigger className="w-full h-9 text-[12px] rounded-lg bg-[#FFFCF5] border-[var(--color-panel-line)] text-[#1B1733] focus:ring-0 focus:ring-offset-0 focus:border-[#1DD3A0]">
                           <SelectValue placeholder="Select a preset" />
                         </SelectTrigger>
-                        <SelectContent className="bg-[var(--color-chrome)] border-[var(--color-chrome-border)] text-[var(--color-chrome-bright)] text-[11px]">
+                        <SelectContent className="bg-[var(--color-panel)] border-[var(--color-panel-line)] text-[#1B1733] text-[12px]">
                           {PRESETS.map((p) => (
                             <SelectItem
                               key={p.id}
                               value={p.id}
-                              className="text-[11px] cursor-pointer hover:bg-[var(--color-chrome-soft)] focus:bg-[var(--color-chrome-soft)] focus:text-[var(--color-chrome-bright)]"
+                              className="text-[12px] cursor-pointer focus:bg-[#FFFCF5] focus:text-[#1B1733]"
                             >
                               {p.label}
                             </SelectItem>
@@ -179,7 +181,7 @@ export default function SandboxPage() {
                         </SelectContent>
                       </Select>
                       {preset && (
-                        <p className="text-[9px] text-[var(--color-chrome-text)]/80 mt-2 leading-relaxed font-medium">
+                        <p className="text-[10px] mt-2 leading-relaxed" style={{ color: '#9A92AD' }}>
                           {preset.hint}
                         </p>
                       )}
@@ -193,7 +195,7 @@ export default function SandboxPage() {
             </div>
 
             {/* Metrics Readout */}
-            <div className="border-t border-[var(--color-chrome-border)] bg-slate-950/20 mt-auto">
+            <div className="mt-auto" style={{ borderTop: '1px solid var(--color-panel-line)' }}>
               <MetricsPanel />
             </div>
           </div>

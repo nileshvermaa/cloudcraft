@@ -16,6 +16,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { SCENARIO_MAP } from '@/lib/scenarios';
 import Link from 'next/link';
 import { AlertTriangle } from 'lucide-react';
+import { PillButton } from '@/components/ui/PillButton';
 
 interface ScenarioPageProps {
   params: Promise<{ id: string }>;
@@ -61,20 +62,23 @@ export default function ScenarioPage({ params }: ScenarioPageProps) {
 
   if (!targetScenario) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 p-6 relative">
-        <div className="absolute w-[300px] h-[300px] bg-teal-500/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="chrome-panel border border-[var(--color-chrome-border)] rounded-2xl p-8 max-w-sm text-center shadow-lg relative z-10">
-          <AlertTriangle className="mx-auto text-amber-500 mb-4 animate-bounce" size={40} />
-          <h2 className="font-display font-extrabold text-xl text-[var(--color-chrome-bright)] mb-2">
-            Scenario Not Found
+      <div
+        className="flex flex-col items-center justify-center min-h-screen p-6"
+        style={{ background: 'linear-gradient(160deg, #EEEAFE 0%, #FFF7ED 55%, #FFEAF2 100%)' }}
+      >
+        <div
+          className="rounded-3xl p-8 max-w-sm text-center"
+          style={{ background: 'var(--color-panel)', border: '1px solid var(--color-panel-line)' }}
+        >
+          <AlertTriangle className="mx-auto mb-4" style={{ color: '#FFB81C' }} size={40} />
+          <h2 className="text-xl font-semibold mb-2" style={{ fontFamily: 'var(--font-display)', color: '#1B1733' }}>
+            Scenario not found
           </h2>
-          <p className="text-sm text-[var(--color-chrome-text)] mb-6 leading-relaxed">
-            The mission briefing you are looking for has been decommissioned or moved.
+          <p className="text-sm mb-6 leading-relaxed" style={{ color: '#5B5470' }}>
+            That mission has been decommissioned or moved.
           </p>
-          <Link href="/">
-            <button className="h-9 text-[11px] font-black uppercase tracking-wider flex items-center justify-center mx-auto px-5 rounded-md bg-teal-400 text-slate-950 hover:bg-teal-300 transition-all shadow-[0_3px_0_#0D9488] active:shadow-none active:translate-y-[3px]">
-              Return to Base
-            </button>
+          <Link href="/" className="inline-block">
+            <PillButton variant="primary" size="sm">Back to menu</PillButton>
           </Link>
         </div>
       </div>
@@ -131,7 +135,7 @@ export default function ScenarioPage({ params }: ScenarioPageProps) {
             </AnimatePresence>
 
             {/* Metrics Readout */}
-            <div className="border-t border-[var(--color-chrome-border)] bg-slate-950/20 mt-auto">
+            <div className="mt-auto" style={{ borderTop: '1px solid var(--color-panel-line)' }}>
               <MetricsPanel />
             </div>
           </div>
