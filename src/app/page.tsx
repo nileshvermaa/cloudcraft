@@ -2,22 +2,135 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
-import { ModeCard } from '@/components/home/ModeCard';
-import { ScenarioCard } from '@/components/home/ScenarioCard';
-import { SCENARIOS } from '@/lib/scenarios';
+import { motion, useReducedMotion } from 'motion/react';
 import { useGameStore } from '@/store/useGameStore';
-import { Nimbus, PingsLayer } from '@/components/cast/CastRenderer';
-import { Cpu, Zap, Layout, Hammer, Terminal, Map, Package, Settings } from 'lucide-react';
-import Link from 'next/link';
+import { Nimbus } from '@/components/cast/CastRenderer';
+import { PillButton } from '@/components/ui/PillButton';
+import { shade } from '@/components/canvas/nodes/tile-geometry';
+import { formatRps } from '@/lib/utils';
+import { Hammer, Map as MapIcon, Package, Settings, Volume2, VolumeX } from 'lucide-react';
 
-const spring = { type: 'spring' as const, stiffness: 260, damping: 22 };
+const spring = { type: 'spring' as const, stiffness: 260, damping: 20 };
+
+/* ── One iso cuboid building ───────────────────────────────────────────────── */
+function IsoTile({ x, y, s = 1, color }: { x: number; y: number; s?: number; color: string }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s})`}>
+      <ellipse cx={55} cy={118} rx={44} ry={7} fill="rgba(27,23,51,0.10)" />
+      <polygon points="5,38 55,66 55,110 5,82" fill={shade(color, 0.12)} />
+      <polygon points="105,38 55,66 55,110 105,82" fill={shade(color, 0.22)} />
+      <polygon points="55,10 105,38 55,66 5,38" fill={color} />
+    </g>
+  );
+}
+
+/* ── A floating ping bean ──────────────────────────────────────────────────── */
+function FloatingPing({ color, style, delay }: { color: string; style: React.CSSProperties; delay: number }) {
+  const reduced = useReducedMotion();
+  return (
+    <motion.div
+      style={{ position: 'absolute', ...style }}
+      animate={reduced ? {} : { y: [0, -10, 0] }}
+      transition={reduced ? {} : { duration: 3 + delay, repeat: Infinity, ease: 'easeInOut', delay }}
+    >
+      <svg width={26} height={26} viewBox="0 0 28 28" style={{ overflow: 'visible' }}>
+        <ellipse cx={14} cy={20} rx={9} ry={2.5} fill="rgba(27,23,51,0.08)" />
+        <ellipse cx={14} cy={13} rx={10} ry={9} fill={color} />
+        <circle cx={10} cy={11} r={1.8} fill="#1B1733" />
+        <circle cx={18} cy={11} r={1.8} fill="#1B1733" />
+        <circle cx={10.5} cy={10.5} r={0.7} fill="white" />
+        <circle cx={18.5} cy={10.5} r={0.7} fill="white" />
+        <path d="M11 15 Q14 18 17 15" stroke="#1B1733" strokeWidth={1.5} fill="none" strokeLinecap="round" />
+      </svg>
+    </motion.div>
+  );
+}
+
+/* ── The iso "Cloud City" scene ────────────────────────────────────────────── */
+function CloudCityScene() {
+  const reduced = useReducedMotion();
+  return (
+    <div className="relative w-full max-w-[640px] aspect-[4/3] select-none">
+      {/* Drifting clouds */}
+      {[
+        { top: '12%', size: 70, dur: 22, from: -30 },
+        { top: '26%', size: 48, dur: 28, from: 40 },
+      ].map((c, i) => (
+        <motion.div
+          key={i}
+          className="absolute"
+          style={{ top: c.top, left: '50%' }}
+          animate={reduced ? {} : { x: [c.from, c.from + 26, c.from] }}
+          transition={reduced ? {} : { duration: c.dur, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <svg width={c.size} height={c.size * 0.6} viewBox="0 0 100 60">
+            <ellipse cx={35} cy={38} rx={26} ry={18} fill="#FFFFFF" opacity={0.85} />
+            <circle cx={56} cy={30} r={20} fill="#FFFFFF" opacity={0.85} />
+            <circle cx={30} cy={26} r={15} fill="#FFFFFF" opacity={0.85} />
+          </svg>
+        </motion.div>
+      ))}
+
+      <svg viewBox="0 0 480 360" className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+        {/* Sun */}
+        <circle cx={410} cy={70} r={30} fill="#FFD96B" opacity={0.9} />
+        <circle cx={410} cy={70} r={42} fill="#FFD96B" opacity={0.25} />
+
+        {/* Soft hills */}
+        <path d="M0,255 Q140,210 280,238 T480,232 L480,360 L0,360 Z" fill="#D7F0E2" />
+        <path d="M0,290 Q160,255 320,282 T480,280 L480,360 L0,360 Z" fill="#C5E8D5" />
+
+        {/* Conduit road connecting the buildings */}
+        <path
+          d="M120,168 Q190,228 232,214 Q300,196 350,182"
+          fill="none"
+          stroke="#EAD9B8"
+          strokeWidth={12}
+          strokeLinecap="round"
+        />
+        <path
+          d="M120,168 Q190,228 232,214 Q300,196 350,182"
+          fill="none"
+          stroke="#FFF7E8"
+          strokeWidth={3}
+          strokeDasharray="2 9"
+          strokeLinecap="round"
+        />
+
+        {/* Buildings (candy iso tiles) */}
+        <IsoTile x={70} y={70} s={0.62} color="#22B8FF" />
+        <IsoTile x={165} y={92} s={0.92} color="#1DD3A0" />
+        <IsoTile x={300} y={78} s={0.72} color="#9B5DE5" />
+
+        {/* "Cloud City" signpost */}
+        <g transform="translate(196 250)">
+          <rect x={-2} y={6} width={5} height={40} rx={2} fill="#C9A86A" />
+          <g transform="translate(-58 -16)">
+            <rect width={118} height={30} rx={8} fill="#FFF3DD" stroke="#ECE0C8" strokeWidth={1.5} />
+            <text x={59} y={20} textAnchor="middle" fontSize={15} fontWeight={600}
+              fontFamily="var(--font-display)" fill="#1B1733">Cloud City</text>
+          </g>
+        </g>
+      </svg>
+
+      {/* Nimbus host, bobbing on the hill (clear of the sign) */}
+      <div className="absolute" style={{ left: '6%', bottom: '20%' }}>
+        <Nimbus state="idle" size={82} />
+      </div>
+
+      {/* Floating traffic */}
+      <FloatingPing color="#FF6B6B" style={{ left: '26%', top: '42%' }} delay={0} />
+      <FloatingPing color="#FFD23D" style={{ left: '66%', top: '36%' }} delay={0.8} />
+      <FloatingPing color="#4ECDC4" style={{ left: '74%', bottom: '40%' }} delay={1.6} />
+    </div>
+  );
+}
 
 export default function HomePage() {
   const router = useRouter();
   const reduced = useReducedMotion();
-  const { bestScores, loadBestScores, startSandbox } = useGameStore();
-  const [showScenarios] = useState(false);
+  const { bestSandboxLoad, loadBestScores, startSandbox } = useGameStore();
+  const [muted, setMuted] = useState(false);
 
   useEffect(() => {
     loadBestScores();
@@ -28,226 +141,119 @@ export default function HomePage() {
     router.push('/sandbox');
   };
 
-  const handleSelectScenario = (id: string) => {
-    router.push(`/scenario/${id}`);
-  };
+  const bestLoads = Object.values(bestSandboxLoad ?? {});
+  const bestSurvived = bestLoads.length ? Math.max(...bestLoads) : 0;
+
+  const stack = [
+    { delay: 0.05, node: (
+      <PillButton variant="primary" size="lg" block icon={<Hammer size={18} />} onClick={handleStartSandbox}>
+        Play sandbox
+      </PillButton>
+    ) },
+    { delay: 0.12, node: (
+      <PillButton variant="secondary" size="md" block icon={<MapIcon size={16} />} onClick={() => router.push('/scenarios')}>
+        Scenarios
+      </PillButton>
+    ) },
+    { delay: 0.19, node: (
+      <PillButton variant="secondary" size="md" block icon={<Package size={16} />} onClick={() => router.push('/collection')}>
+        Collection
+      </PillButton>
+    ) },
+  ];
 
   return (
     <div
-      className="min-h-screen relative overflow-hidden flex flex-col justify-between"
-      style={{ background: 'linear-gradient(160deg, #EEEAFE 0%, #FFF7ED 55%, #FFEAF2 100%)' }}
+      className="min-h-screen flex flex-col md:flex-row"
+      style={{ background: 'linear-gradient(180deg, #EAF6FF 0%, #FFF7ED 100%)' }}
     >
-      {/* ── Soft floating backdrop blobs ─────────────────────────────────── */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Large soft orbs */}
-        <div
-          className="absolute -top-24 -left-20 w-[520px] h-[520px] rounded-full opacity-40"
-          style={{ background: 'radial-gradient(circle, #C4B5FD 0%, transparent 70%)' }}
-        />
-        <div
-          className="absolute top-[30%] -right-32 w-[440px] h-[440px] rounded-full opacity-30"
-          style={{ background: 'radial-gradient(circle, #86EFAC 0%, transparent 70%)' }}
-        />
-        <div
-          className="absolute bottom-0 left-[30%] w-[360px] h-[360px] rounded-full opacity-25"
-          style={{ background: 'radial-gradient(circle, #FCA5A5 0%, transparent 70%)' }}
-        />
-
-        {/* Floating isometric cubes — candy palette */}
-        {[
-          { x: '8%',  y: '18%', s: 50, c1: '#9B5DE5', c2: '#8852CA', c3: '#7849B2', delay: 0 },
-          { x: '88%', y: '38%', s: 68, c1: '#22B8FF', c2: '#1EA2E0', c3: '#1A8FC7', delay: 1.5 },
-          { x: '75%', y: '72%', s: 38, c1: '#FF6FA5', c2: '#E06191', c3: '#C75681', delay: 0.8 },
-          { x: '15%', y: '68%', s: 44, c1: '#1DD3A0', c2: '#19B98C', c3: '#16A47D', delay: 2.1 },
-          { x: '50%', y: '8%',  s: 32, c1: '#FF8A3D', c2: '#E07935', c3: '#C76C2F', delay: 0.4 },
-        ].map((cube, i) => (
-          <motion.div
-            key={i}
-            className="absolute"
-            style={{ left: cube.x, top: cube.y }}
-            animate={reduced ? {} : {
-              y: [0, -14, 0],
-              rotate: [0, cube.delay % 2 === 0 ? 4 : -4, 0],
-            }}
-            transition={reduced ? {} : {
-              duration: 6 + cube.delay,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: cube.delay,
-            }}
-          >
-            <svg width={cube.s} height={cube.s} viewBox="0 0 32 32" opacity={0.4}>
-              <polygon points="16,3 29,10 16,17 3,10" fill={cube.c1} />
-              <polygon points="3,10 16,17 16,27 3,20" fill={cube.c2} />
-              <polygon points="29,10 16,17 16,27 29,20" fill={cube.c3} />
-            </svg>
-          </motion.div>
-        ))}
+      {/* ── Left: the iso cloud-city scene ── */}
+      <div className="relative flex-1 min-h-[44vh] md:min-h-screen flex items-center justify-center px-6 py-8 overflow-hidden">
+        <motion.div
+          className="w-full max-w-[560px] flex justify-center"
+          initial={{ opacity: 0, y: reduced ? 0 : 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={reduced ? { duration: 0 } : spring}
+        >
+          <CloudCityScene />
+        </motion.div>
       </div>
 
-      {/* ── Main content ─────────────────────────────────────────────────── */}
-      <div className="relative max-w-5xl mx-auto px-6 py-14 w-full flex-grow flex flex-col justify-center">
-
-        {/* Hero */}
-        <motion.div
-          className="text-center mb-12 select-none"
-          initial={{ opacity: 0, y: reduced ? 0 : 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={reduced ? { duration: 0 } : { ...spring, delay: 0.05 }}
-        >
-          {/* Nimbus + version pill */}
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <Nimbus state="idle" size={72} />
-            <div className="text-left">
-              <div className="inline-flex items-center gap-2 mb-1.5 px-3 py-1 rounded-full border shadow-md"
-                style={{ background: 'rgba(255,255,255,0.7)', borderColor: '#DDD6FE' }}>
-                <Cpu size={11} className="text-violet-500" />
-                <span className="text-[9px] font-mono font-bold tracking-[0.2em] text-violet-600 uppercase">
-                  Simulation Console v3.0
-                </span>
-              </div>
-              <h1
-                className="text-5xl md:text-6xl font-black leading-none tracking-tight"
-                style={{ fontFamily: 'var(--font-display)', color: '#1B1733' }}
-              >
-                CloudCraft<span style={{ color: '#1DD3A0' }}>.</span>Studio
-              </h1>
-            </div>
-          </div>
-
-          {/* Tagline */}
-          <div
-            className="text-[10px] font-black tracking-[0.3em] uppercase mb-4"
-            style={{ color: '#9B5DE5', fontFamily: 'var(--font-mono)' }}
-          >
-            Build it • Break it • Scale it
-          </div>
-
-          <p
-            className="text-[15px] max-w-md mx-auto leading-relaxed font-medium"
-            style={{ color: '#5B5470' }}
-          >
-            Architect systems on an isometric workbench, inject heavy traffic loads,
-            and watch where the nodes fail — and why.
-          </p>
-        </motion.div>
-
-        {/* Mode cards */}
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto w-full mb-10"
-          initial={{ opacity: 0, y: reduced ? 0 : 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={reduced ? { duration: 0 } : { ...spring, delay: 0.15 }}
-        >
-          <ModeCard
-            title="Sandbox Workbench"
-            description="Build whatever you want on an empty board. Crank up traffic to 1M RPS to stress-test your abstractions and watch them overflow."
-            icon={<Hammer size={20} className="text-teal-400" />}
-            actionText="ENTER WORKBENCH"
-            onClick={handleStartSandbox}
-            accentColor="var(--color-cat-compute)"
-          />
-
-          <ModeCard
-            title="Mission Simulator"
-            description="Diagnose and repair pre-existing broken deployments. Re-wire to meet strict latency, SLA, and budget bounds to earn high scores."
-            icon={<Layout size={20} className="text-violet-400" />}
-            actionText="LAUNCH MISSIONS"
-            onClick={() => router.push('/scenarios')}
-            accentColor="var(--color-cat-source)"
-          />
-        </motion.div>
-
-        {/* Scenarios grid */}
-        <AnimatePresence>
-          {showScenarios && (
-            <motion.div
-              className="max-w-3xl mx-auto w-full"
-              style={{ borderTop: '1px solid rgba(155,93,229,0.2)', paddingTop: '2.5rem' }}
-              initial={{ opacity: 0, y: reduced ? 0 : 20, height: 0 }}
-              animate={{ opacity: 1, y: 0, height: 'auto' }}
-              exit={{ opacity: 0, y: 10, height: 0 }}
-              transition={reduced ? { duration: 0 } : spring}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <Terminal size={14} className="text-violet-500" />
-                  <h3
-                    className="font-black text-xl tracking-wide uppercase"
-                    style={{ fontFamily: 'var(--font-display)', color: '#1B1733' }}
-                  >
-                    Mission Directory
-                  </h3>
-                </div>
-                <span
-                  className="text-[10px] font-mono uppercase"
-                  style={{ color: '#9A92AD' }}
-                >
-                  {SCENARIOS.length} deployments active
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {SCENARIOS.map((scenario, i) => (
-                  <motion.div
-                    key={scenario.id}
-                    initial={{ opacity: 0, y: reduced ? 0 : 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={reduced ? { duration: 0 } : { ...spring, delay: i * 0.05 }}
-                  >
-                    <ScenarioCard
-                      scenario={scenario}
-                      bestScore={bestScores[scenario.id]}
-                      onClick={() => handleSelectScenario(scenario.id)}
-                    />
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Idle Pings wandering on menu */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <PingsLayer count={5} state="happy" />
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer
-        className="relative text-center py-5 text-[10px] font-mono border-t"
-        style={{
-          color: '#9A92AD',
-          borderColor: 'rgba(155,93,229,0.15)',
-          background: 'rgba(255,255,255,0.5)',
-          backdropFilter: 'blur(12px)',
-        }}
+      {/* ── Right: cream panel with wordmark + button stack ── */}
+      <div
+        className="w-full md:w-[440px] flex-shrink-0 flex items-center justify-center px-8 py-10 md:py-0"
+        style={{ background: 'var(--color-panel)', borderLeft: '1px solid var(--color-panel-line)' }}
       >
-        <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span>CloudCraft Studio • v3.0 — Dumb Ways Your Stack Dies</span>
-          <div className="flex gap-4 items-center">
-            <Link href="/scenarios">
-              <button className="flex items-center gap-1.5 text-[10px] uppercase font-bold hover:opacity-80 transition-opacity" style={{ color: '#22B8FF' }}>
-                <Map size={10} /> Scenario Map
-
-              </button>
-            </Link>
-            <Link href="/collection">
-              <button className="flex items-center gap-1.5 text-[10px] uppercase font-bold hover:opacity-80 transition-opacity" style={{ color: '#FF6FA5' }}>
-                <Package size={10} /> Collection
-              </button>
-            </Link>
-            <Link href="/settings">
-              <button className="flex items-center gap-1.5 text-[10px] uppercase font-bold hover:opacity-80 transition-opacity" style={{ color: '#9A92AD' }}>
-                <Settings size={10} /> Settings
-              </button>
-            </Link>
-            <span className="flex items-center gap-1.5 uppercase font-bold" style={{ color: '#1DD3A0' }}>
-              <Zap size={10} className="animate-pulse" /> Simulation Ready
-            </span>
+        <motion.div
+          className="w-full max-w-[320px]"
+          initial={{ opacity: 0, y: reduced ? 0 : 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={reduced ? { duration: 0 } : { ...spring, delay: 0.1 }}
+        >
+          {/* Wordmark */}
+          <div className="flex items-center gap-2.5 mb-1">
+            <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden>
+              <polygon points="16,3 29,10 16,17 3,10" fill="#1DD3A0" />
+              <polygon points="3,10 16,17 16,27 3,20" fill="#19B98C" />
+              <polygon points="29,10 16,17 16,27 29,20" fill="#16A47D" />
+            </svg>
+            <h1 className="text-[30px] leading-none font-semibold" style={{ fontFamily: 'var(--font-display)', color: '#1B1733' }}>
+              CloudCraft
+            </h1>
           </div>
-        </div>
-      </footer>
+          <div className="text-[15px] font-bold mb-4" style={{ fontFamily: 'var(--font-display)', color: '#9A92AD' }}>
+            Studio
+          </div>
+
+          <p className="text-[14px] leading-relaxed mb-6" style={{ color: '#5B5470' }}>
+            Build a cloud stack on the board, pour traffic on it, and watch where it breaks — and why.
+          </p>
+
+          {/* Best-survived pill */}
+          {bestSurvived > 0 && (
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-5"
+              style={{ background: '#FFFCF5', border: '1px solid var(--color-panel-line)' }}
+            >
+              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#9A92AD' }}>
+                Best survived
+              </span>
+              <span className="text-[13px] font-bold" style={{ fontFamily: 'var(--font-jetbrains)', color: '#1DA97F' }}>
+                {formatRps(bestSurvived)}
+              </span>
+            </div>
+          )}
+
+          {/* Button stack */}
+          <div className="flex flex-col gap-3">
+            {stack.map((b, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: reduced ? 0 : 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={reduced ? { duration: 0 } : { ...spring, delay: b.delay }}
+              >
+                {b.node}
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Settings + sound */}
+          <div className="flex items-center gap-3 mt-4">
+            <PillButton variant="secondary" size="sm" icon={<Settings size={14} />} onClick={() => router.push('/settings')}>
+              Settings
+            </PillButton>
+            <PillButton
+              variant="secondary"
+              size="sm"
+              icon={muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+              onClick={() => setMuted((m) => !m)}
+            >
+              {muted ? 'Muted' : 'Sound'}
+            </PillButton>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }

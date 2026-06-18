@@ -16,6 +16,7 @@
 
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Nimbus, TheLeakCharacter, TheCrewCharacter, BillyCharacter } from './CastRenderer';
+import { PillButton } from '@/components/ui/PillButton';
 import type { SimResult } from '@/types';
 
 type VignetteType = 'overworked' | 'domino' | 'break-in' | 'big-sleep' | 'bill-shock' | null;
@@ -188,12 +189,11 @@ export function FailureVignette({ result, show, onDismiss }: FailureVignetteProp
                 <span>{meta.lesson}</span>
               </div>
 
-              <button
-                onClick={onDismiss}
-                className="flex-shrink-0 h-8 px-4 rounded-lg text-[11px] font-black uppercase tracking-wide bg-teal-400 text-slate-950 hover:bg-teal-300 transition-colors shadow-[0_3px_0_#0D9488] active:shadow-none active:translate-y-[3px]"
-              >
-                Got it
-              </button>
+              <div className="flex-shrink-0">
+                <PillButton variant="primary" size="sm" onClick={onDismiss}>
+                  Got it
+                </PillButton>
+              </div>
             </div>
           </motion.div>
         </motion.div>

@@ -40,13 +40,24 @@
   --color-board: #FFFDF8; /* v3 board color */
   --color-grid:  #EFEADF; /* v3 grid lines */
 
-  /* Chrome colors for panels & toolbar */
-  --color-chrome: #1B1F2E;
-  --color-chrome-soft: #252A3A;
-  --color-chrome-border: #2E3447;
-  --color-chrome-text: #A8B4C8;
-  --color-chrome-bright: #E2E8F0;
-  --color-glow: rgba(20, 184, 166, 0.15);
+  /* Cream panel surfaces (v4 — the quiet chrome).
+     The legacy --color-chrome-* names are repurposed to the candy
+     cream palette so any remaining references resolve correctly. */
+  --color-panel:       #FFF3DD; /* cream UI panel */
+  --color-panel-2:     #FFFCF5; /* lighter cream inset */
+  --color-panel-line:  #ECE0C8; /* warm hairline border */
+
+  --color-chrome:        #FFF3DD; /* → cream panel */
+  --color-chrome-soft:   #FFFCF5; /* → lighter cream inset */
+  --color-chrome-border: #ECE0C8; /* → warm border */
+  --color-chrome-text:   #5B5470; /* → ink-soft (body) */
+  --color-chrome-bright: #1B1733; /* → ink (headings) */
+  --color-glow: rgba(29, 211, 160, 0.18);
+
+  /* Candy 3D button (PillButton) */
+  --btn-face: #FFC83D;
+  --btn-edge: #E0A41E;
+  --btn-text: #633806;
 
   /* Typography */
   --color-ink:       #1B1733; /* v3 ink */
@@ -93,27 +104,27 @@
 }
 
 /* ─── Isometric grid background (diamond pattern) ─── */
+/* Transparent fill so the chosen scene tint shows through; warm grid lines. */
 .iso-grid {
-  background-color: var(--color-board);
+  background-color: transparent;
   background-image:
-    /* Diamond grid achieved with two diagonal line sets */
     repeating-linear-gradient(
       60deg,
       transparent,
       transparent 39px,
-      rgba(20, 184, 166, 0.08) 39px,
-      rgba(20, 184, 166, 0.08) 40px
+      rgba(91, 84, 112, 0.09) 39px,
+      rgba(91, 84, 112, 0.09) 40px
     ),
     repeating-linear-gradient(
       -60deg,
       transparent,
       transparent 39px,
-      rgba(20, 184, 166, 0.08) 39px,
-      rgba(20, 184, 166, 0.08) 40px
+      rgba(91, 84, 112, 0.09) 39px,
+      rgba(91, 84, 112, 0.09) 40px
     );
 }
 
-/* Inner shadow on edges of the canvas workbench */
+/* Soft warm framing on the canvas workbench (no harsh dark vignette). */
 .canvas-container {
   position: relative;
 }
@@ -122,17 +133,15 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  box-shadow: inset 0 0 16px rgba(11, 18, 32, 0.08);
+  box-shadow: inset 0 0 60px rgba(91, 84, 112, 0.05);
   z-index: 10;
 }
 
-/* Chrome panel layout */
+/* Cream panel layout — the quiet chrome (flat, warm border, no blur shadow). */
 .chrome-panel {
-  background-color: var(--color-chrome);
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.02'/%3E%3C/svg%3E");
-  border: 1px solid var(--color-chrome-border);
-  color: var(--color-chrome-text);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  background-color: var(--color-panel);
+  border: 1px solid var(--color-panel-line);
+  color: var(--color-ink-soft);
 }
 
 /* ─── React Flow overrides for light theme ─── */
@@ -145,32 +154,30 @@
 }
 
 .react-flow__minimap {
-  background: var(--color-chrome) !important;
-  border: 1px solid var(--color-chrome-border) !important;
-  border-radius: 10px;
+  background: var(--color-panel-2) !important;
+  border: 1px solid var(--color-panel-line) !important;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .react-flow__controls {
-  background: var(--color-chrome) !important;
-  border: 1px solid var(--color-chrome-border) !important;
-  border-radius: 10px !important;
+  background: var(--color-panel-2) !important;
+  border: 1px solid var(--color-panel-line) !important;
+  border-radius: 12px !important;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
 }
 
 .react-flow__controls-button {
-  background: var(--color-chrome) !important;
+  background: var(--color-panel-2) !important;
   border: none !important;
-  border-bottom: 1px solid var(--color-chrome-border) !important;
-  color: var(--color-chrome-text) !important;
-  fill: var(--color-chrome-text) !important;
+  border-bottom: 1px solid var(--color-panel-line) !important;
+  color: var(--color-ink-soft) !important;
+  fill: var(--color-ink-soft) !important;
 }
 
 .react-flow__controls-button:hover {
-  background: var(--color-chrome-soft) !important;
-  color: var(--color-chrome-bright) !important;
+  background: #FFF3DD !important;
+  color: var(--color-ink) !important;
 }
 
 .react-flow__controls-button svg {
@@ -181,6 +188,49 @@
   stroke: var(--color-ink-muted);
   stroke-width: 2.5;
 }
+
+/* ─── PillButton — the candy 3D button (§ UI spec) ─── */
+.pill {
+  display: inline-flex;
+  border-radius: 999px;
+  user-select: none;
+}
+.pill > button {
+  position: relative;
+  top: -6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: top 120ms cubic-bezier(0.2, 0.8, 0.3, 1), filter 120ms ease;
+}
+.pill:hover > button:not(:disabled)  { top: -9px; }
+.pill:active > button:not(:disabled) { top: -1px; }
+.pill > button:disabled {
+  top: 0;
+  filter: saturate(0.35) opacity(0.65);
+  cursor: not-allowed;
+}
+
+.pill[data-variant="primary"]          { background: var(--btn-edge); }
+.pill[data-variant="primary"] > button { background: var(--btn-face); color: var(--btn-text); }
+
+.pill[data-variant="secondary"]          { background: #E7D6B4; }
+.pill[data-variant="secondary"] > button { background: #FFFFFF; color: var(--color-ink-soft); }
+
+.pill[data-variant="danger"]          { background: #D43A3A; }
+.pill[data-variant="danger"] > button { background: #FF6B6B; color: #FFF1F1; }
+
+.pill[data-size="sm"] > button { padding: 8px 14px;  font-size: 13px; }
+.pill[data-size="md"] > button { padding: 11px 18px; font-size: 15px; }
+.pill[data-size="lg"] > button { padding: 14px 24px; font-size: 18px; }
 
 /* ─── Traffic flow animation ─── */
 @keyframes dash-flow {

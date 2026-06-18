@@ -80,7 +80,6 @@ export const ServiceTile = memo(function ServiceTile({
           height={TILE_H}
           viewBox={`0 0 ${TILE_W} ${TILE_H}`}
           overflow="visible"
-          style={{ filter: selected ? `drop-shadow(0 0 6px ${baseColor})` : 'drop-shadow(0 3px 6px rgba(11,18,32,0.15))' }}
         >
           {/* Drop shadow ellipse */}
           <ellipse
@@ -108,6 +107,17 @@ export const ServiceTile = memo(function ServiceTile({
             points={TOP_FACE}
             fill={faces.top}
           />
+
+          {/* Selected — dashed outline in category color */}
+          {selected && (
+            <polygon
+              points={TOP_FACE}
+              fill="none"
+              stroke={baseColor}
+              strokeWidth={2}
+              strokeDasharray="4 3"
+            />
+          )}
 
           {/* State ring on top face */}
           {isOverloaded && (
