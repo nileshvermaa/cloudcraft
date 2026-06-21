@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { Toolbar } from './Toolbar';
 import { Palette } from './Palette';
+import { useGameStore } from '@/store/useGameStore';
 import { cn } from '@/lib/utils';
 
 interface BoardFrameProps {
@@ -32,6 +33,15 @@ export function BoardFrame({ title, backHref = '/', themeClass = '', sceneClass 
     setRailOpen(false);
   };
 
+  // Screen-reader summary of the current architecture + last result.
+  const { nodes, edges, result } = useGameStore();
+  const summary =
+    `${nodes.length} tile${nodes.length === 1 ? '' : 's'} placed, ` +
+    `${edges.length} connection${edges.length === 1 ? '' : 's'}. ` +
+    (result
+      ? `Last run scored grade ${result.grade}: serving ${Math.round(result.servedRps).toLocaleString()} requests per second at ${result.errorRatePct.toFixed(1)} percent errors.`
+      : 'Not yet run.');
+
   return (
     <div className={cn('flex flex-col h-dvh overflow-hidden', themeClass)}>
       <Toolbar
@@ -55,7 +65,8 @@ export function BoardFrame({ title, backHref = '/', themeClass = '', sceneClass 
         </aside>
 
         {/* Canvas */}
-        <div className={cn('flex-1 h-full relative min-w-0', sceneClass)}>
+        <div className={cn('flex-1 h-full relative min-w-0', sceneClass)} role="region" aria-label="Architecture board">
+          <div className="sr-only" role="status" aria-live="polite">{summary}</div>
           {children}
         </div>
 

@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, useReducedMotion } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useGameStore } from '@/store/useGameStore';
 import { Nimbus } from '@/components/cast/CastRenderer';
 import { PillButton } from '@/components/ui/PillButton';
 import { shade } from '@/components/canvas/nodes/tile-geometry';
 import { formatRps } from '@/lib/utils';
-import { Hammer, Map as MapIcon, Package, Settings, Volume2, VolumeX, Coins, Star } from 'lucide-react';
+import { Hammer, Map as MapIcon, Package, Settings, Volume2, VolumeX, Coins, Star, Trophy } from 'lucide-react';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 20 };
 
@@ -131,10 +131,21 @@ export default function HomePage() {
   const reduced = useReducedMotion();
   const { bestSandboxLoad, bestScores, coins, loadBestScores, startSandbox } = useGameStore();
   const [muted, setMuted] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
 
   useEffect(() => {
     loadBestScores();
   }, [loadBestScores]);
+
+  // Brief splash on first load of the tab session (skipped under reduced motion).
+  useEffect(() => {
+    if (reduced || typeof window === 'undefined') return;
+    if (sessionStorage.getItem('cloudcraft-splash') === '1') return;
+    sessionStorage.setItem('cloudcraft-splash', '1');
+    const show = setTimeout(() => setShowSplash(true), 0);
+    const hide = setTimeout(() => setShowSplash(false), 1600);
+    return () => { clearTimeout(show); clearTimeout(hide); };
+  }, [reduced]);
 
   const handleStartSandbox = () => {
     startSandbox();
@@ -167,10 +178,40 @@ export default function HomePage() {
   ];
 
   return (
-    <div
-      className="min-h-screen flex flex-col md:flex-row"
-      style={{ background: 'linear-gradient(180deg, #EAF6FF 0%, #FFF7ED 100%)' }}
-    >
+    <>
+      <AnimatePresence>
+        {showSplash && (
+          <motion.div
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4"
+            style={{ background: 'linear-gradient(180deg, #EAF6FF 0%, #FFF7ED 100%)' }}
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <motion.div animate={{ y: [0, -16, 0] }} transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}>
+              <Nimbus state="idle" size={96} />
+            </motion.div>
+            <div className="flex items-center gap-2.5">
+              <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden>
+                <polygon points="16,3 29,10 16,17 3,10" fill="#1DD3A0" />
+                <polygon points="3,10 16,17 16,27 3,20" fill="#19B98C" />
+                <polygon points="29,10 16,17 16,27 29,20" fill="#16A47D" />
+              </svg>
+              <span className="text-[28px] font-semibold" style={{ fontFamily: 'var(--font-display)', color: '#1B1733' }}>
+                CloudCraft Studio
+              </span>
+            </div>
+            <div className="text-[12px] font-medium" style={{ color: '#9A92AD' }}>
+              Assembling the cloud city…
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div
+        className="min-h-screen flex flex-col md:flex-row"
+        style={{ background: 'linear-gradient(180deg, #EAF6FF 0%, #FFF7ED 100%)' }}
+      >
       {/* ── Left: the iso cloud-city scene ── */}
       <div className="relative flex-1 min-h-[44vh] md:min-h-screen flex items-center justify-center px-6 py-8 overflow-hidden">
         <motion.div
@@ -264,8 +305,11 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* Settings + sound */}
-          <div className="flex items-center gap-3 mt-4">
+          {/* Settings + achievements + sound */}
+          <div className="flex flex-wrap items-center gap-2.5 mt-4">
+            <PillButton variant="secondary" size="sm" icon={<Trophy size={14} />} onClick={() => router.push('/achievements')}>
+              Awards
+            </PillButton>
             <PillButton variant="secondary" size="sm" icon={<Settings size={14} />} onClick={() => router.push('/settings')}>
               Settings
             </PillButton>
@@ -281,5 +325,6 @@ export default function HomePage() {
         </motion.div>
       </div>
     </div>
+    </>
   );
 }
