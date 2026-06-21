@@ -24,8 +24,9 @@ export const ConduitEdge = memo(function ConduitEdge({
   source,
   target,
 }: EdgeProps) {
-  const { isSimulating, result, nodes } = useGameStore();
+  const { isSimulating, result, liveResult, nodes } = useGameStore();
   const reduced = useReducedMotion();
+  const r = result ?? liveResult;
 
   const [edgePath] = getBezierPath({
     sourceX,
@@ -42,14 +43,14 @@ export const ConduitEdge = memo(function ConduitEdge({
   const baseColor = sourceType ? CATEGORY_COLOR[CATALOG[sourceType]?.category] : '#94A3B8';
 
   // Does this edge feed an overloaded tier?
-  const isBottleneck = result?.overloadedNodeIds.includes(target) ?? false;
+  const isBottleneck = r?.overloadedNodeIds.includes(target) ?? false;
 
   const isAnimated = isSimulating && !reduced;
   const strokeColor = selected
     ? baseColor
     : isBottleneck
     ? '#FF4D4D'
-    : result && result.errorRatePct > 10
+    : r && r.errorRatePct > 10
     ? '#FFB81C'
     : baseColor;
 
@@ -79,6 +80,15 @@ export const ConduitEdge = memo(function ConduitEdge({
         const pt = pathEl.getPointAtLength(frac * len);
         c.setAttribute('cx', String(pt.x));
         c.setAttribute('cy', String(pt.y));
+        // Into an overloaded tier, Pings pile up and splat near the end.
+        if (isBottleneck) {
+          const o = frac > 0.78 ? Math.max(0, 1 - (frac - 0.78) / 0.2) : 1;
+          c.setAttribute('opacity', String(o));
+          c.setAttribute('r', String(frac > 0.78 ? 4 + (frac - 0.78) * 16 : 4));
+        } else {
+          c.setAttribute('opacity', '1');
+          c.setAttribute('r', '4');
+        }
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -86,7 +96,7 @@ export const ConduitEdge = memo(function ConduitEdge({
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [showPings, edgePath]);
+  }, [showPings, edgePath, isBottleneck]);
 
   return (
     <>

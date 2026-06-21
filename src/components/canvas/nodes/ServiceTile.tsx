@@ -12,6 +12,7 @@ import {
 import { CATALOG, CATEGORY_COLOR, getNodeLabel } from '@/lib/catalog';
 import { TILE_W, TILE_H, TOP_FACE, LEFT_WALL, RIGHT_WALL, ICON_CX, ICON_CY, tileFaces } from './tile-geometry';
 import { useGameStore } from '@/store/useGameStore';
+import { TheCrewCharacter } from '@/components/cast/CastRenderer';
 import type { ServiceNodeData } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -40,10 +41,12 @@ export const ServiceTile = memo(function ServiceTile({
   selected,
 }: NodeProps & { data: ServiceNodeData }) {
   const spec = CATALOG[data.type as keyof typeof CATALOG];
-  const { removeNode, updateUnits, result, providerSkin } = useGameStore();
+  const { removeNode, updateUnits, result, liveResult, providerSkin } = useGameStore();
   const [hovered, setHovered] = useState(false);
 
   if (!spec) return null;
+
+  const r = result ?? liveResult;
 
   const baseColor = CATEGORY_COLOR[spec.category];
   const faces = tileFaces(baseColor);
@@ -52,13 +55,14 @@ export const ServiceTile = memo(function ServiceTile({
   // Provider skin label (custom label in config takes priority)
   const displayLabel = getNodeLabel(data.type, providerSkin, data.config?.label ?? (data.label !== spec.label ? data.label : undefined));
 
-  const isOverloaded = result?.overloadedNodeIds.includes(id) ?? false;
-  const isSpof = result?.spofs.includes(id) ?? false;
-  const servedRatio = result
-    ? Math.min(1, result.servedRps / (result.servedRps + Math.max(0, result.errorRatePct * result.servedRps / 100)))
+  const isOverloaded = r?.overloadedNodeIds.includes(id) ?? false;
+  const isSpof = r?.spofs.includes(id) ?? false;
+  const servedRatio = r
+    ? Math.min(1, r.servedRps / (r.servedRps + Math.max(0, r.errorRatePct * r.servedRps / 100)))
     : null;
   const isWarn = servedRatio !== null && !isOverloaded && servedRatio < 0.95;
-  const isHealthy = result !== null && !isOverloaded && !isWarn;
+  const isHealthy = r !== null && !isOverloaded && !isWarn;
+  const showCrew = isOverloaded && (spec.category === 'compute' || data.type === 'worker');
 
   // Determine ring/glow state class
   const tileStateClass = cn(
@@ -227,6 +231,11 @@ export const ServiceTile = memo(function ServiceTile({
           <StackedBadge units={units} color={baseColor} />
         )}
       </div>
+
+      {/* The Crew scrambles onto overloaded compute/worker tiles */}
+      {showCrew && (
+        <TheCrewCharacter state="panic" style={{ top: -14, left: 2, zIndex: 20, pointerEvents: 'none' }} />
+      )}
 
       {/* Label below the tile */}
       <div

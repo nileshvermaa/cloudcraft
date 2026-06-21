@@ -136,6 +136,10 @@ export default function ScenariosPage() {
   };
 
   const completed = SCENARIOS.filter((s) => bestScores[s.id] !== undefined).length;
+  const totalStars = SCENARIOS.reduce((sum, s) => {
+    const sc = bestScores[s.id];
+    return sum + (sc === undefined ? 0 : sc >= 80 ? 3 : sc >= 65 ? 2 : sc >= 45 ? 1 : 0);
+  }, 0);
 
   return (
     <div className="min-h-screen flex flex-col overflow-hidden" style={{ background: PAGE_BG }}>
@@ -157,11 +161,19 @@ export default function ScenariosPage() {
             Scenario Map
           </h1>
         </div>
-        <div
-          className="text-[11px] font-bold px-3 py-1 rounded-full"
-          style={{ background: '#1DD3A01A', color: '#1DA97F', border: '1px solid #1DD3A040', fontFamily: 'var(--font-jetbrains)' }}
-        >
-          {completed} / {SCENARIOS.length} cleared
+        <div className="flex items-center gap-2">
+          <div
+            className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full"
+            style={{ background: '#FFFCF5', color: '#1B1733', border: '1px solid var(--color-panel-line)', fontFamily: 'var(--font-jetbrains)' }}
+          >
+            <Star size={11} fill="#FFB81C" stroke="#FFB81C" /> {totalStars}
+          </div>
+          <div
+            className="text-[11px] font-bold px-3 py-1 rounded-full"
+            style={{ background: '#1DD3A01A', color: '#1DA97F', border: '1px solid #1DD3A040', fontFamily: 'var(--font-jetbrains)' }}
+          >
+            {completed} / {SCENARIOS.length}
+          </div>
         </div>
       </header>
 

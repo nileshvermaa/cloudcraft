@@ -7,6 +7,7 @@ import {
   ShieldAlert, Shield, Lock, Key, Eye, FileText, Bell, Route,
   type LucideIcon,
 } from 'lucide-react';
+import { useReactFlow } from '@xyflow/react';
 import { CATALOG, CATEGORY_COLOR, CATEGORY_LABEL, CATEGORIES, PALETTE_ORDER, getNodeLabel } from '@/lib/catalog';
 import { tileFaces } from './nodes/tile-geometry';
 import type { ServiceCategory, ServiceType } from '@/types';
@@ -27,9 +28,10 @@ function formatCap(rps: number): string {
   return `${rps}`;
 }
 
-function PaletteItem({ type }: { type: ServiceType }) {
+function PaletteItem({ type, onPlace }: { type: ServiceType; onPlace?: () => void }) {
   const spec = CATALOG[type];
-  const { providerSkin } = useGameStore();
+  const { providerSkin, addNode } = useGameStore();
+  const { screenToFlowPosition } = useReactFlow();
   if (!spec) return null;
 
   const baseColor = CATEGORY_COLOR[spec.category];
@@ -42,16 +44,32 @@ function PaletteItem({ type }: { type: ServiceType }) {
     event.dataTransfer.effectAllowed = 'move';
   };
 
+  // Tap / keyboard placement — works on touch where HTML5 drag does not.
+  const place = () => {
+    const center = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+    addNode(type, { x: center.x - 55, y: center.y - 55 });
+    onPlace?.();
+  };
+
   return (
     <div
       draggable
       onDragStart={onDragStart}
+      onClick={place}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          place();
+        }
+      }}
+      role="button"
       tabIndex={0}
+      title={`Add ${displayLabel}`}
       className={cn(
         'group flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-xl',
         'bg-[#FFFCF5] border border-[var(--color-panel-line)]',
-        'cursor-grab active:cursor-grabbing select-none',
-        'transition-all duration-150 hover:-translate-y-0.5',
+        'cursor-grab active:cursor-grabbing select-none touch-manipulation',
+        'transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0',
         'focus:outline-none focus-visible:ring-2'
       )}
       onMouseEnter={(e) => (e.currentTarget.style.borderColor = baseColor)}
@@ -85,7 +103,7 @@ function PaletteItem({ type }: { type: ServiceType }) {
   );
 }
 
-export function Palette() {
+export function Palette({ onPlace }: { onPlace?: () => void }) {
   const grouped: Partial<Record<ServiceCategory, ServiceType[]>> = {};
   for (const type of PALETTE_ORDER) {
     const cat = CATALOG[type].category;
@@ -104,7 +122,7 @@ export function Palette() {
           Parts
         </h2>
         <p className="text-[11px] mt-0.5" style={{ color: '#9A92AD' }}>
-          Drag a piece onto the board
+          Tap or drag a piece onto the board
         </p>
       </div>
 
@@ -113,20 +131,14 @@ export function Palette() {
         {CATEGORIES.filter((cat) => grouped[cat]?.length).map((cat) => (
           <div key={cat} className="space-y-1.5">
             <div className="flex items-center gap-2 px-1.5">
-              <span
-                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: CATEGORY_COLOR[cat] }}
-              />
-              <span
-                className="text-[10px] font-bold uppercase tracking-wider"
-                style={{ color: '#9A92AD' }}
-              >
+              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: CATEGORY_COLOR[cat] }} />
+              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#9A92AD' }}>
                 {CATEGORY_LABEL[cat]}
               </span>
             </div>
             <div className="space-y-1">
               {grouped[cat]!.map((type) => (
-                <PaletteItem key={type} type={type} />
+                <PaletteItem key={type} type={type} onPlace={onPlace} />
               ))}
             </div>
           </div>

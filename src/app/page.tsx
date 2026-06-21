@@ -8,7 +8,7 @@ import { Nimbus } from '@/components/cast/CastRenderer';
 import { PillButton } from '@/components/ui/PillButton';
 import { shade } from '@/components/canvas/nodes/tile-geometry';
 import { formatRps } from '@/lib/utils';
-import { Hammer, Map as MapIcon, Package, Settings, Volume2, VolumeX } from 'lucide-react';
+import { Hammer, Map as MapIcon, Package, Settings, Volume2, VolumeX, Coins, Star } from 'lucide-react';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 20 };
 
@@ -129,7 +129,7 @@ function CloudCityScene() {
 export default function HomePage() {
   const router = useRouter();
   const reduced = useReducedMotion();
-  const { bestSandboxLoad, loadBestScores, startSandbox } = useGameStore();
+  const { bestSandboxLoad, bestScores, coins, loadBestScores, startSandbox } = useGameStore();
   const [muted, setMuted] = useState(false);
 
   useEffect(() => {
@@ -143,6 +143,10 @@ export default function HomePage() {
 
   const bestLoads = Object.values(bestSandboxLoad ?? {});
   const bestSurvived = bestLoads.length ? Math.max(...bestLoads) : 0;
+  const totalStars = Object.values(bestScores ?? {}).reduce(
+    (sum, v) => sum + (v >= 80 ? 3 : v >= 65 ? 2 : v >= 45 ? 1 : 0),
+    0
+  );
 
   const stack = [
     { delay: 0.05, node: (
@@ -209,20 +213,42 @@ export default function HomePage() {
             Build a cloud stack on the board, pour traffic on it, and watch where it breaks — and why.
           </p>
 
-          {/* Best-survived pill */}
-          {bestSurvived > 0 && (
+          {/* Progression pills */}
+          <div className="flex flex-wrap gap-2 mb-5">
             <div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-5"
-              style={{ background: '#FFFCF5', border: '1px solid var(--color-panel-line)' }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+              style={{ background: '#FFF7D6', border: '1px solid #F2D98A' }}
             >
-              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#9A92AD' }}>
-                Best survived
-              </span>
-              <span className="text-[13px] font-bold" style={{ fontFamily: 'var(--font-jetbrains)', color: '#1DA97F' }}>
-                {formatRps(bestSurvived)}
+              <Coins size={13} style={{ color: '#9A6B00' }} />
+              <span className="text-[13px] font-bold" style={{ fontFamily: 'var(--font-jetbrains)', color: '#9A6B00' }}>
+                {coins}
               </span>
             </div>
-          )}
+            {totalStars > 0 && (
+              <div
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                style={{ background: '#FFFCF5', border: '1px solid var(--color-panel-line)' }}
+              >
+                <Star size={13} fill="#FFB81C" stroke="#FFB81C" />
+                <span className="text-[13px] font-bold" style={{ fontFamily: 'var(--font-jetbrains)', color: '#1B1733' }}>
+                  {totalStars}
+                </span>
+              </div>
+            )}
+            {bestSurvived > 0 && (
+              <div
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+                style={{ background: '#FFFCF5', border: '1px solid var(--color-panel-line)' }}
+              >
+                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#9A92AD' }}>
+                  Best
+                </span>
+                <span className="text-[13px] font-bold" style={{ fontFamily: 'var(--font-jetbrains)', color: '#1DA97F' }}>
+                  {formatRps(bestSurvived)}
+                </span>
+              </div>
+            )}
+          </div>
 
           {/* Button stack */}
           <div className="flex flex-col gap-3">
