@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useReducedMotion } from 'motion/react';
 import { Activity, Clock, DollarSign, Shield, Zap, AlertTriangle, Play } from 'lucide-react';
 import { useGameStore } from '@/store/useGameStore';
 import { formatRps, formatMs, formatUsd } from '@/lib/utils';
@@ -59,6 +61,25 @@ function MetricRow({ icon, label, value, target, state = 'neutral', dimmed }: Me
 
 export function MetricsPanel() {
   const { result, scenario, mode, loadRps, isSimulating } = useGameStore();
+  const reduced = useReducedMotion();
+
+  // Count-up: ramp 0 → 1 when a fresh result lands (advanced only inside rAF).
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    if (!result || reduced) return;
+    let raf = 0;
+    let start: number | null = null;
+    const step = (t: number) => {
+      if (start === null) start = t;
+      const k = Math.min(1, (t - start) / 850);
+      setProgress(k);
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [result, reduced]);
+  const p = !result ? 0 : reduced ? 1 : progress;
+
   const dimmed = !result && !isSimulating;
   const targetRps = mode === 'scenario' && scenario ? scenario.targetRps : loadRps;
 
@@ -101,11 +122,11 @@ export function MetricsPanel() {
       </div>
 
       <div className="grid grid-cols-1 gap-2">
-        <MetricRow icon={<Zap size={12} />} label="Served Load" value={result ? formatRps(servedRps) : '—'} target={formatRps(targetRps)} state={rpsState()} dimmed={dimmed} />
-        <MetricRow icon={<Activity size={12} />} label="Error Rate" value={result ? `${errPct.toFixed(2)}%` : '—'} state={result ? (errPct === 0 ? 'ok' : 'danger') : 'neutral'} dimmed={dimmed} />
-        <MetricRow icon={<Clock size={12} />} label="Latency (p50)" value={result ? formatMs(latency) : '—'} target={scenario ? formatMs(scenario.maxLatencyMs) : undefined} state={latencyState()} dimmed={dimmed} />
-        <MetricRow icon={<Shield size={12} />} label="Availability" value={result ? `${(avail * 100).toFixed(3)}%` : '—'} target={scenario ? `${(scenario.slaAvailability * 100).toFixed(2)}%` : undefined} state={availState()} dimmed={dimmed} />
-        <MetricRow icon={<DollarSign size={12} />} label="Monthly Cost" value={result ? formatUsd(cost) : '—'} target={scenario ? formatUsd(scenario.budgetUsd) : undefined} state={costState()} dimmed={dimmed} />
+        <MetricRow icon={<Zap size={12} />} label="Served Load" value={result ? formatRps(servedRps * p) : '—'} target={formatRps(targetRps)} state={rpsState()} dimmed={dimmed} />
+        <MetricRow icon={<Activity size={12} />} label="Error Rate" value={result ? `${(errPct * p).toFixed(2)}%` : '—'} state={result ? (errPct === 0 ? 'ok' : 'danger') : 'neutral'} dimmed={dimmed} />
+        <MetricRow icon={<Clock size={12} />} label="Latency (p50)" value={result ? formatMs(latency * p) : '—'} target={scenario ? formatMs(scenario.maxLatencyMs) : undefined} state={latencyState()} dimmed={dimmed} />
+        <MetricRow icon={<Shield size={12} />} label="Availability" value={result ? `${(avail * p * 100).toFixed(3)}%` : '—'} target={scenario ? `${(scenario.slaAvailability * 100).toFixed(2)}%` : undefined} state={availState()} dimmed={dimmed} />
+        <MetricRow icon={<DollarSign size={12} />} label="Monthly Cost" value={result ? formatUsd(cost * p) : '—'} target={scenario ? formatUsd(scenario.budgetUsd) : undefined} state={costState()} dimmed={dimmed} />
       </div>
 
       {result && result.overloadedNodeIds.length > 0 && (

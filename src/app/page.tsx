@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, useReducedMotion } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useGameStore } from '@/store/useGameStore';
 import { Nimbus } from '@/components/cast/CastRenderer';
 import { PillButton } from '@/components/ui/PillButton';
 import { shade } from '@/components/canvas/nodes/tile-geometry';
 import { formatRps } from '@/lib/utils';
-import { Hammer, Map as MapIcon, Package, Settings, Volume2, VolumeX } from 'lucide-react';
+import { Hammer, Map as MapIcon, Package, Settings, Volume2, VolumeX, Coins, Star, Trophy } from 'lucide-react';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 20 };
 
@@ -129,12 +129,22 @@ function CloudCityScene() {
 export default function HomePage() {
   const router = useRouter();
   const reduced = useReducedMotion();
-  const { bestSandboxLoad, loadBestScores, startSandbox } = useGameStore();
-  const [muted, setMuted] = useState(false);
+  const { bestSandboxLoad, bestScores, coins, soundOn, setSoundOn, loadBestScores, startSandbox } = useGameStore();
+  const [showSplash, setShowSplash] = useState(false);
 
   useEffect(() => {
     loadBestScores();
   }, [loadBestScores]);
+
+  // Brief splash on first load of the tab session (skipped under reduced motion).
+  useEffect(() => {
+    if (reduced || typeof window === 'undefined') return;
+    if (sessionStorage.getItem('cloudcraft-splash') === '1') return;
+    sessionStorage.setItem('cloudcraft-splash', '1');
+    const show = setTimeout(() => setShowSplash(true), 0);
+    const hide = setTimeout(() => setShowSplash(false), 1600);
+    return () => { clearTimeout(show); clearTimeout(hide); };
+  }, [reduced]);
 
   const handleStartSandbox = () => {
     startSandbox();
@@ -143,6 +153,10 @@ export default function HomePage() {
 
   const bestLoads = Object.values(bestSandboxLoad ?? {});
   const bestSurvived = bestLoads.length ? Math.max(...bestLoads) : 0;
+  const totalStars = Object.values(bestScores ?? {}).reduce(
+    (sum, v) => sum + (v >= 80 ? 3 : v >= 65 ? 2 : v >= 45 ? 1 : 0),
+    0
+  );
 
   const stack = [
     { delay: 0.05, node: (
@@ -163,10 +177,40 @@ export default function HomePage() {
   ];
 
   return (
-    <div
-      className="min-h-screen flex flex-col md:flex-row"
-      style={{ background: 'linear-gradient(180deg, #EAF6FF 0%, #FFF7ED 100%)' }}
-    >
+    <>
+      <AnimatePresence>
+        {showSplash && (
+          <motion.div
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4"
+            style={{ background: 'linear-gradient(180deg, #EAF6FF 0%, #FFF7ED 100%)' }}
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <motion.div animate={{ y: [0, -16, 0] }} transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}>
+              <Nimbus state="idle" size={96} />
+            </motion.div>
+            <div className="flex items-center gap-2.5">
+              <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden>
+                <polygon points="16,3 29,10 16,17 3,10" fill="#1DD3A0" />
+                <polygon points="3,10 16,17 16,27 3,20" fill="#19B98C" />
+                <polygon points="29,10 16,17 16,27 29,20" fill="#16A47D" />
+              </svg>
+              <span className="text-[28px] font-semibold" style={{ fontFamily: 'var(--font-display)', color: '#1B1733' }}>
+                CloudCraft Studio
+              </span>
+            </div>
+            <div className="text-[12px] font-medium" style={{ color: '#9A92AD' }}>
+              Assembling the cloud city…
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div
+        className="min-h-screen flex flex-col md:flex-row"
+        style={{ background: 'linear-gradient(180deg, #EAF6FF 0%, #FFF7ED 100%)' }}
+      >
       {/* ── Left: the iso cloud-city scene ── */}
       <div className="relative flex-1 min-h-[44vh] md:min-h-screen flex items-center justify-center px-6 py-8 overflow-hidden">
         <motion.div
@@ -209,20 +253,42 @@ export default function HomePage() {
             Build a cloud stack on the board, pour traffic on it, and watch where it breaks — and why.
           </p>
 
-          {/* Best-survived pill */}
-          {bestSurvived > 0 && (
+          {/* Progression pills */}
+          <div className="flex flex-wrap gap-2 mb-5">
             <div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-5"
-              style={{ background: '#FFFCF5', border: '1px solid var(--color-panel-line)' }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+              style={{ background: '#FFF7D6', border: '1px solid #F2D98A' }}
             >
-              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#9A92AD' }}>
-                Best survived
-              </span>
-              <span className="text-[13px] font-bold" style={{ fontFamily: 'var(--font-jetbrains)', color: '#1DA97F' }}>
-                {formatRps(bestSurvived)}
+              <Coins size={13} style={{ color: '#9A6B00' }} />
+              <span className="text-[13px] font-bold" style={{ fontFamily: 'var(--font-jetbrains)', color: '#9A6B00' }}>
+                {coins}
               </span>
             </div>
-          )}
+            {totalStars > 0 && (
+              <div
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                style={{ background: '#FFFCF5', border: '1px solid var(--color-panel-line)' }}
+              >
+                <Star size={13} fill="#FFB81C" stroke="#FFB81C" />
+                <span className="text-[13px] font-bold" style={{ fontFamily: 'var(--font-jetbrains)', color: '#1B1733' }}>
+                  {totalStars}
+                </span>
+              </div>
+            )}
+            {bestSurvived > 0 && (
+              <div
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+                style={{ background: '#FFFCF5', border: '1px solid var(--color-panel-line)' }}
+              >
+                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#9A92AD' }}>
+                  Best
+                </span>
+                <span className="text-[13px] font-bold" style={{ fontFamily: 'var(--font-jetbrains)', color: '#1DA97F' }}>
+                  {formatRps(bestSurvived)}
+                </span>
+              </div>
+            )}
+          </div>
 
           {/* Button stack */}
           <div className="flex flex-col gap-3">
@@ -238,22 +304,26 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* Settings + sound */}
-          <div className="flex items-center gap-3 mt-4">
+          {/* Settings + achievements + sound */}
+          <div className="flex flex-wrap items-center gap-2.5 mt-4">
+            <PillButton variant="secondary" size="sm" icon={<Trophy size={14} />} onClick={() => router.push('/achievements')}>
+              Awards
+            </PillButton>
             <PillButton variant="secondary" size="sm" icon={<Settings size={14} />} onClick={() => router.push('/settings')}>
               Settings
             </PillButton>
             <PillButton
               variant="secondary"
               size="sm"
-              icon={muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-              onClick={() => setMuted((m) => !m)}
+              icon={soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
+              onClick={() => setSoundOn(!soundOn)}
             >
-              {muted ? 'Muted' : 'Sound'}
+              {soundOn ? 'Sound' : 'Muted'}
             </PillButton>
           </div>
         </motion.div>
       </div>
     </div>
+    </>
   );
 }

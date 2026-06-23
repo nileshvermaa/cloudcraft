@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
-import { ChevronLeft, Lock, Package } from 'lucide-react';
+import { ChevronLeft, Lock, Package, Coins, Check } from 'lucide-react';
 import {
   Nimbus,
   TheLeakCharacter,
   TheCrewCharacter,
   BillyCharacter,
 } from '@/components/cast/CastRenderer';
+import { PillButton } from '@/components/ui/PillButton';
+import { useGameStore } from '@/store/useGameStore';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 22 };
 const PAGE_BG = 'linear-gradient(180deg, #FFEAF2 0%, #FFF7ED 100%)';
@@ -24,8 +26,7 @@ const CHARACTERS = [
     ability: 'Cheer Bonus — Nimbus\'s enthusiasm gives you +2% grace time before the first timeout.',
     color: '#EDE7F6',
     accentColor: '#9B5DE5',
-    unlockCondition: 'Default — always unlocked',
-    unlocked: true,
+    cost: 0,
     renderCharacter: () => <Nimbus state="idle" size={80} />,
   },
   {
@@ -36,8 +37,7 @@ const CHARACTERS = [
     ability: 'Resilient Payload — Pings can queue 5% more before the first splat.',
     color: '#FFF7ED',
     accentColor: '#FF8A3D',
-    unlockCondition: 'Default — always unlocked',
-    unlocked: true,
+    cost: 0,
     renderCharacter: () => (
       <div className="flex gap-3 justify-center">
         {['#FF6B6B', '#FFD93D', '#4ECDC4', '#A78BFA'].map((c) => (
@@ -65,8 +65,7 @@ const CHARACTERS = [
     ability: 'Overtime Mode — The Crew can sustain 10% over-capacity for 0.5s before the tile redlines.',
     color: '#FFF7ED',
     accentColor: '#FF8A3D',
-    unlockCondition: 'Complete any Intermediate or higher scenario with an A or above.',
-    unlocked: true,
+    cost: 60,
     renderCharacter: () => (
       <div className="relative h-20 flex items-end justify-center gap-2">
         <div style={{ position: 'relative', width: 36, height: 44 }}>
@@ -86,8 +85,7 @@ const CHARACTERS = [
     ability: 'Caught in the Act — The Leak\'s animation plays 20% slower, making the lesson extra clear.',
     color: '#F1F5F9',
     accentColor: '#3B4252',
-    unlockCondition: 'Experience a security violation and then fix it (WAF or Auth) in the same session.',
-    unlocked: true,
+    cost: 90,
     renderCharacter: () => (
       <div style={{ position: 'relative', width: 60, height: 64, margin: '0 auto' }}>
         <TheLeakCharacter state="sneak" style={{ top: 0, left: 8 }} />
@@ -102,8 +100,7 @@ const CHARACTERS = [
     ability: 'Thrifty Lens — Billy flags any node running at under 30% utilization with a small coin icon.',
     color: '#EFF6FF',
     accentColor: '#3B82F6',
-    unlockCondition: 'Complete any scenario within 50% of the budget limit.',
-    unlocked: true,
+    cost: 70,
     renderCharacter: () => (
       <div style={{ position: 'relative', width: 50, height: 64, margin: '0 auto' }}>
         <BillyCharacter state="ok" style={{ top: 0, left: 0 }} />
@@ -114,11 +111,37 @@ const CHARACTERS = [
 
 type CharacterId = (typeof CHARACTERS)[number]['id'];
 
+function MiniRender({ id }: { id: CharacterId }) {
+  if (id === 'nimbus') return <Nimbus state="idle" size={56} />;
+  if (id === 'pings')
+    return (
+      <svg width={28} height={28} viewBox="0 0 28 28" style={{ overflow: 'visible' }}>
+        <ellipse cx={14} cy={13} rx={10} ry={9} fill="#FF6B6B" />
+        <circle cx={10} cy={11} r={1.8} fill="#1B1733" />
+        <circle cx={18} cy={11} r={1.8} fill="#1B1733" />
+        <path d="M11 15 Q14 18 17 15" stroke="#1B1733" strokeWidth={1.5} fill="none" strokeLinecap="round" />
+      </svg>
+    );
+  if (id === 'the-crew')
+    return <div style={{ position: 'relative', width: 36, height: 44 }}><TheCrewCharacter state="work" /></div>;
+  if (id === 'the-leak')
+    return <div style={{ position: 'relative', width: 44, height: 52 }}><TheLeakCharacter state="sneak" style={{ top: 0, left: 0 }} /></div>;
+  return <div style={{ position: 'relative', width: 40, height: 52 }}><BillyCharacter state="ok" style={{ top: 0, left: 0 }} /></div>;
+}
+
 export default function CollectionPage() {
   const reduced = useReducedMotion();
   const [selectedId, setSelectedId] = useState<CharacterId>('nimbus');
+  const { coins, unlockedCharacters, equippedCharacter, unlockCharacter, equipCharacter, loadBestScores } = useGameStore();
+
+  useEffect(() => {
+    loadBestScores();
+  }, [loadBestScores]);
 
   const selected = CHARACTERS.find((c) => c.id === selectedId) ?? CHARACTERS[0];
+  const isUnlocked = (id: string) => unlockedCharacters.includes(id);
+  const selectedUnlocked = isUnlocked(selected.id);
+  const isEquipped = equippedCharacter === selected.id;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: PAGE_BG }}>
@@ -141,10 +164,11 @@ export default function CollectionPage() {
           </h1>
         </div>
         <div
-          className="text-[11px] font-bold px-3 py-1 rounded-full"
-          style={{ background: '#FF6FA51A', color: '#D14E84', border: '1px solid #FF6FA540', fontFamily: 'var(--font-jetbrains)' }}
+          className="flex items-center gap-1.5 text-[13px] font-bold px-3 py-1 rounded-full"
+          style={{ background: '#FFF7D6', color: '#9A6B00', border: '1px solid #F2D98A', fontFamily: 'var(--font-jetbrains)' }}
         >
-          {CHARACTERS.filter((c) => c.unlocked).length} / {CHARACTERS.length}
+          <Coins size={13} />
+          {coins}
         </div>
       </header>
 
@@ -155,55 +179,25 @@ export default function CollectionPage() {
           <div className="grid grid-cols-2 gap-3">
             {CHARACTERS.map((char, i) => {
               const active = selectedId === char.id;
+              const unlocked = isUnlocked(char.id);
               return (
                 <motion.button
                   key={char.id}
-                  onClick={() => char.unlocked && setSelectedId(char.id as CharacterId)}
+                  onClick={() => setSelectedId(char.id as CharacterId)}
                   className="relative rounded-2xl p-3 flex flex-col items-center gap-2 transition-all focus:outline-none"
                   style={{
                     background: active ? char.color : '#FFFCF5',
                     border: `2px solid ${active ? char.accentColor : 'var(--color-panel-line)'}`,
-                    opacity: char.unlocked ? 1 : 0.55,
-                    cursor: char.unlocked ? 'pointer' : 'not-allowed',
                     boxShadow: active ? `0 0 0 2px ${char.accentColor}30` : 'none',
                   }}
                   initial={{ opacity: 0, y: reduced ? 0 : 16 }}
-                  animate={{ opacity: char.unlocked ? 1 : 0.55, y: 0 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={reduced ? { duration: 0 } : { ...spring, delay: i * 0.06 }}
-                  whileHover={reduced || !char.unlocked ? {} : { scale: 1.04 }}
-                  whileTap={reduced || !char.unlocked ? {} : { scale: 0.97 }}
+                  whileHover={reduced ? {} : { scale: 1.04 }}
+                  whileTap={reduced ? {} : { scale: 0.97 }}
                 >
-                  <div className="w-16 h-16 flex items-center justify-center">
-                    {char.unlocked ? (
-                      char.id === 'nimbus' ? <Nimbus state="idle" size={56} /> :
-                      char.id === 'pings' ? (
-                        <svg width={28} height={28} viewBox="0 0 28 28" style={{ overflow: 'visible' }}>
-                          <ellipse cx={14} cy={13} rx={10} ry={9} fill="#FF6B6B" />
-                          <circle cx={10} cy={11} r={1.8} fill="#1B1733" />
-                          <circle cx={18} cy={11} r={1.8} fill="#1B1733" />
-                          <path d="M11 15 Q14 18 17 15" stroke="#1B1733" strokeWidth={1.5} fill="none" strokeLinecap="round" />
-                        </svg>
-                      ) :
-                      char.id === 'the-crew' ? (
-                        <div style={{ position: 'relative', width: 36, height: 44 }}>
-                          <TheCrewCharacter state="work" />
-                        </div>
-                      ) :
-                      char.id === 'the-leak' ? (
-                        <div style={{ position: 'relative', width: 44, height: 52 }}>
-                          <TheLeakCharacter state="sneak" style={{ top: 0, left: 0 }} />
-                        </div>
-                      ) : (
-                        <div style={{ position: 'relative', width: 40, height: 52 }}>
-                          <BillyCharacter state="ok" style={{ top: 0, left: 0 }} />
-                        </div>
-                      )
-                    ) : (
-                      <div className="flex flex-col items-center gap-1">
-                        <Lock size={20} style={{ color: '#B8B0C4' }} />
-                        <div className="text-[8px] font-mono" style={{ color: '#B8B0C4' }}>LOCKED</div>
-                      </div>
-                    )}
+                  <div className="w-16 h-16 flex items-center justify-center" style={{ opacity: unlocked ? 1 : 0.4, filter: unlocked ? 'none' : 'grayscale(0.7)' }}>
+                    <MiniRender id={char.id} />
                   </div>
                   <div className="text-center">
                     <div className="text-[11px] font-semibold leading-tight" style={{ fontFamily: 'var(--font-display)', color: '#1B1733' }}>
@@ -211,6 +205,24 @@ export default function CollectionPage() {
                     </div>
                     <div className="text-[9px]" style={{ color: '#9A92AD' }}>{char.role}</div>
                   </div>
+
+                  {/* Lock / equipped badges */}
+                  {!unlocked && (
+                    <div
+                      className="absolute top-1.5 right-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold"
+                      style={{ background: '#FFF7D6', color: '#9A6B00', fontFamily: 'var(--font-jetbrains)' }}
+                    >
+                      <Lock size={8} /> {char.cost}
+                    </div>
+                  )}
+                  {unlocked && equippedCharacter === char.id && (
+                    <div
+                      className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center"
+                      style={{ background: '#1DD3A0' }}
+                    >
+                      <Check size={10} color="white" strokeWidth={3} />
+                    </div>
+                  )}
                 </motion.button>
               );
             })}
@@ -228,7 +240,7 @@ export default function CollectionPage() {
           >
             <div
               className="rounded-3xl p-8 mb-6 flex items-center justify-center"
-              style={{ background: selected.color, border: `1px solid ${selected.accentColor}22`, minHeight: 180 }}
+              style={{ background: selected.color, border: `1px solid ${selected.accentColor}22`, minHeight: 180, opacity: selectedUnlocked ? 1 : 0.55, filter: selectedUnlocked ? 'none' : 'grayscale(0.6)' }}
             >
               {selected.renderCharacter()}
             </div>
@@ -244,7 +256,7 @@ export default function CollectionPage() {
               {selected.description}
             </p>
 
-            <div className="rounded-xl p-4 mb-5" style={{ background: `${selected.accentColor}12`, border: `1px solid ${selected.accentColor}30` }}>
+            <div className="rounded-xl p-4 mb-6" style={{ background: `${selected.accentColor}12`, border: `1px solid ${selected.accentColor}30` }}>
               <div className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: selected.accentColor }}>
                 Flavor Ability
               </div>
@@ -253,16 +265,33 @@ export default function CollectionPage() {
               </p>
             </div>
 
-            <div className="flex items-start gap-2 text-sm" style={{ color: '#9A92AD' }}>
-              {selected.unlocked ? (
-                <span className="font-bold flex items-center gap-1" style={{ color: '#1DA97F' }}>✓ Unlocked</span>
+            {/* Action */}
+            {selectedUnlocked ? (
+              isEquipped ? (
+                <div className="flex items-center gap-1.5 text-sm font-bold" style={{ color: '#1DA97F' }}>
+                  <Check size={16} /> Equipped
+                </div>
               ) : (
-                <>
-                  <Lock size={14} className="flex-shrink-0 mt-0.5" />
-                  <span>{selected.unlockCondition}</span>
-                </>
-              )}
-            </div>
+                <PillButton variant="primary" size="md" onClick={() => equipCharacter(selected.id)}>
+                  Equip
+                </PillButton>
+              )
+            ) : (
+              <div className="flex items-center gap-3">
+                <PillButton
+                  variant="primary"
+                  size="md"
+                  icon={<Coins size={16} />}
+                  disabled={coins < selected.cost}
+                  onClick={() => unlockCharacter(selected.id, selected.cost)}
+                >
+                  {coins < selected.cost ? `Need ${selected.cost} coins` : `Unlock · ${selected.cost}`}
+                </PillButton>
+                <span className="text-[12px]" style={{ color: '#9A92AD' }}>
+                  You have <strong style={{ color: '#9A6B00', fontFamily: 'var(--font-jetbrains)' }}>{coins}</strong>
+                </span>
+              </div>
+            )}
           </motion.div>
         </div>
       </div>
