@@ -48,7 +48,7 @@ const cardBase = { background: '#FFFCF5', border: '1px solid var(--color-panel-l
 
 export default function SettingsPage() {
   const reduced = useReducedMotion();
-  const { paletteTheme, setPaletteTheme, providerSkin, setProviderSkin, sceneBg, setSceneBg, loadBestScores } =
+  const { paletteTheme, setPaletteTheme, providerSkin, setProviderSkin, sceneBg, setSceneBg, soundOn, setSoundOn, loadBestScores } =
     useGameStore();
 
   useEffect(() => {
@@ -180,8 +180,31 @@ export default function SettingsPage() {
             transition={reduced ? { duration: 0 } : { ...spring, delay: 0.24 }}
             className="pb-8"
           >
-            <SectionHeader icon={<Volume2 size={18} />} title="Accessibility" />
-            <div className="rounded-2xl p-4" style={cardBase}>
+            <SectionHeader icon={<Volume2 size={18} />} title="Sound & Motion" />
+            <div className="rounded-2xl p-4 flex flex-col gap-4" style={cardBase}>
+              {/* Sound effects */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-bold" style={{ color: '#1B1733' }}>Sound effects</div>
+                  <div className="text-[11px]" style={{ color: '#9A92AD' }}>
+                    Bouncy cues when you place, connect, and run.
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSoundOn(!soundOn)}
+                  className="text-[11px] font-bold px-3 py-1 rounded-full transition-colors"
+                  style={{
+                    background: soundOn ? '#1DD3A01A' : '#FFFCF5',
+                    color: soundOn ? '#1DA97F' : '#9A92AD',
+                    border: `1px solid ${soundOn ? '#1DD3A040' : 'var(--color-panel-line)'}`,
+                    fontFamily: 'var(--font-jetbrains)',
+                  }}
+                >
+                  {soundOn ? 'ON' : 'OFF'}
+                </button>
+              </div>
+
+              {/* Reduce motion (OS-driven) */}
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-bold" style={{ color: '#1B1733' }}>Reduce Motion</div>

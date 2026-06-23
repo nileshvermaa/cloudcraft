@@ -13,7 +13,7 @@ import {
 import { CATALOG, CATEGORY_COLOR, getNodeLabel } from '@/lib/catalog';
 import { TILE_W, TILE_H, TOP_FACE, LEFT_WALL, RIGHT_WALL, ICON_CX, ICON_CY, tileFaces } from './tile-geometry';
 import { useGameStore } from '@/store/useGameStore';
-import { TheCrewCharacter } from '@/components/cast/CastRenderer';
+import { TheCrewCharacter, TheLeakCharacter } from '@/components/cast/CastRenderer';
 import type { ServiceNodeData } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -65,6 +65,8 @@ export const ServiceTile = memo(function ServiceTile({
   const isWarn = servedRatio !== null && !isOverloaded && servedRatio < 0.95;
   const isHealthy = r !== null && !isOverloaded && !isWarn;
   const showCrew = isOverloaded && (spec.category === 'compute' || data.type === 'worker');
+  // The Leak appears on an exposed data store (violation strings end with the target's label).
+  const showLeak = spec.category === 'data' && (r?.securityViolations ?? []).some((v) => v.endsWith(String(data.label)));
 
   // Determine ring/glow state class
   const tileStateClass = cn(
@@ -240,6 +242,11 @@ export const ServiceTile = memo(function ServiceTile({
       {/* The Crew scrambles onto overloaded compute/worker tiles */}
       {showCrew && (
         <TheCrewCharacter state="panic" style={{ top: -14, left: 2, zIndex: 20, pointerEvents: 'none' }} />
+      )}
+
+      {/* The Leak slips onto an exposed data store */}
+      {showLeak && (
+        <TheLeakCharacter state="grab" style={{ top: -12, left: 64, zIndex: 21, pointerEvents: 'none' }} />
       )}
 
       {/* Label below the tile */}
