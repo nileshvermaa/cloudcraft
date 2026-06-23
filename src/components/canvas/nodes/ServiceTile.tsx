@@ -1,7 +1,6 @@
 'use client';
 
 import { memo, useState } from 'react';
-import { motion, useReducedMotion } from 'motion/react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import {
   Globe, Zap, GitMerge, Network, Server, Layers, Cpu,
@@ -44,7 +43,6 @@ export const ServiceTile = memo(function ServiceTile({
   const spec = CATALOG[data.type as keyof typeof CATALOG];
   const { removeNode, updateUnits, result, liveResult, chaosResult, providerSkin } = useGameStore();
   const [hovered, setHovered] = useState(false);
-  const reduced = useReducedMotion();
 
   if (!spec) return null;
 
@@ -76,12 +74,9 @@ export const ServiceTile = memo(function ServiceTile({
   );
 
   return (
-    <motion.div
+    <div
       className="relative cursor-default select-none"
-      style={{ width: TILE_W, height: TILE_H + 30, transformOrigin: '55px 110px' }}
-      initial={reduced ? false : { scale: 0.6, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 16 }}
+      style={{ width: TILE_W, height: TILE_H + 30 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -343,6 +338,6 @@ export const ServiceTile = memo(function ServiceTile({
           borderRadius: '50%',
         }}
       />
-    </motion.div>
+    </div>
   );
 });
