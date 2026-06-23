@@ -42,7 +42,7 @@ export const ServiceTile = memo(function ServiceTile({
   selected,
 }: NodeProps & { data: ServiceNodeData }) {
   const spec = CATALOG[data.type as keyof typeof CATALOG];
-  const { removeNode, updateUnits, result, liveResult, providerSkin } = useGameStore();
+  const { removeNode, updateUnits, result, liveResult, chaosResult, providerSkin } = useGameStore();
   const [hovered, setHovered] = useState(false);
   const reduced = useReducedMotion();
 
@@ -67,6 +67,7 @@ export const ServiceTile = memo(function ServiceTile({
   const showCrew = isOverloaded && (spec.category === 'compute' || data.type === 'worker');
   // The Leak appears on an exposed data store (violation strings end with the target's label).
   const showLeak = spec.category === 'data' && (r?.securityViolations ?? []).some((v) => v.endsWith(String(data.label)));
+  const isDowned = chaosResult?.downedNodeId === id;
 
   // Determine ring/glow state class
   const tileStateClass = cn(
@@ -85,7 +86,7 @@ export const ServiceTile = memo(function ServiceTile({
       onMouseLeave={() => setHovered(false)}
     >
       {/* ── The isometric SVG cuboid ── */}
-      <div className={cn('relative', tileStateClass)}>
+      <div className={cn('relative', tileStateClass)} style={isDowned ? { filter: 'grayscale(1)', opacity: 0.4 } : undefined}>
         <svg
           width={TILE_W}
           height={TILE_H}
@@ -247,6 +248,16 @@ export const ServiceTile = memo(function ServiceTile({
       {/* The Leak slips onto an exposed data store */}
       {showLeak && (
         <TheLeakCharacter state="grab" style={{ top: -12, left: 64, zIndex: 21, pointerEvents: 'none' }} />
+      )}
+
+      {/* Knocked out by chaos */}
+      {isDowned && (
+        <div
+          className="absolute z-[22] left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 rounded-full"
+          style={{ top: -8, background: '#1B1733', color: '#fff', fontFamily: 'var(--font-jetbrains)' }}
+        >
+          ✕ DOWN
+        </div>
       )}
 
       {/* Label below the tile */}

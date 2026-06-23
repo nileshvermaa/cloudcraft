@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Play, RotateCcw, ChevronLeft, PanelLeft, PanelRight } from 'lucide-react';
+import { Play, RotateCcw, ChevronLeft, PanelLeft, PanelRight, Bomb } from 'lucide-react';
 import { PillButton } from '@/components/ui/PillButton';
 import { useGameStore } from '@/store/useGameStore';
 
@@ -17,7 +17,8 @@ const iconBtn =
   'lg:hidden flex items-center justify-center w-9 h-9 rounded-full flex-shrink-0 transition-colors';
 
 export function Toolbar({ title, backHref = '/', onTogglePalette, onToggleRail }: ToolbarProps) {
-  const { isSimulating, runSimulation, reset, mode } = useGameStore();
+  const { isSimulating, isStressing, isChaosRunning, runSimulation, runChaos, reset, mode } = useGameStore();
+  const busy = isSimulating || isStressing || isChaosRunning;
 
   return (
     <div
@@ -86,9 +87,21 @@ export function Toolbar({ title, backHref = '/', onTogglePalette, onToggleRail }
           <PillButton
             variant="secondary"
             size="sm"
+            icon={<Bomb size={14} />}
+            onClick={runChaos}
+            disabled={busy}
+          >
+            Chaos
+          </PillButton>
+        </span>
+
+        <span className="hidden sm:inline-flex">
+          <PillButton
+            variant="secondary"
+            size="sm"
             icon={<RotateCcw size={14} />}
             onClick={reset}
-            disabled={isSimulating}
+            disabled={busy}
           >
             Reset
           </PillButton>
@@ -99,6 +112,7 @@ export function Toolbar({ title, backHref = '/', onTogglePalette, onToggleRail }
           size="md"
           icon={!isSimulating ? <Play size={16} fill="currentColor" /> : undefined}
           loading={isSimulating}
+          disabled={isStressing || isChaosRunning}
           onClick={runSimulation}
         >
           {isSimulating ? 'Running…' : 'Run'}

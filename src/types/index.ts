@@ -130,3 +130,13 @@ export interface StressResult {
   points: StressPoint[];
   breakingPoint: number; // highest offered load served with ~0 errors
 }
+
+/** Result of killing one node to test resilience (chaos / fault injection). */
+export interface ChaosResult {
+  downedNodeId: string;
+  downedNodeLabel: string;
+  normalServedRps: number;
+  survivedRps: number;
+  errorRatePct: number;
+  resilient: boolean;
+}

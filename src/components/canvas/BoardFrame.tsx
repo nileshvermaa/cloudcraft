@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { Toolbar } from './Toolbar';
 import { Palette } from './Palette';
+import { ChaosBanner } from './ChaosBanner';
 import { useGameStore } from '@/store/useGameStore';
 import { cn } from '@/lib/utils';
 
@@ -68,6 +69,7 @@ export function BoardFrame({ title, backHref = '/', themeClass = '', sceneClass 
         <div className={cn('flex-1 h-full relative min-w-0', sceneClass)} role="region" aria-label="Architecture board">
           <div className="sr-only" role="status" aria-live="polite">{summary}</div>
           {children}
+          <ChaosBanner />
         </div>
 
         {/* Right rail — static column on lg, right drawer below */}
