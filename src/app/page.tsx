@@ -129,8 +129,7 @@ function CloudCityScene() {
 export default function HomePage() {
   const router = useRouter();
   const reduced = useReducedMotion();
-  const { bestSandboxLoad, bestScores, coins, loadBestScores, startSandbox } = useGameStore();
-  const [muted, setMuted] = useState(false);
+  const { bestSandboxLoad, bestScores, coins, soundOn, setSoundOn, loadBestScores, startSandbox } = useGameStore();
   const [showSplash, setShowSplash] = useState(false);
 
   useEffect(() => {
@@ -316,10 +315,10 @@ export default function HomePage() {
             <PillButton
               variant="secondary"
               size="sm"
-              icon={muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-              onClick={() => setMuted((m) => !m)}
+              icon={soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
+              onClick={() => setSoundOn(!soundOn)}
             >
-              {muted ? 'Muted' : 'Sound'}
+              {soundOn ? 'Sound' : 'Muted'}
             </PillButton>
           </div>
         </motion.div>

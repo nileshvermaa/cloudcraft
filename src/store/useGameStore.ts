@@ -15,6 +15,7 @@ import { CATALOG } from '@/lib/catalog';
 import { validateConnection } from '@/lib/rules';
 import { simulate } from '@/lib/simulation/engine';
 import { genId } from '@/lib/utils';
+import { playSound, setSoundEnabled } from '@/lib/sound';
 import type {
   GameMode,
   Scenario,
@@ -85,6 +86,7 @@ interface GameStore {
   unlockedCharacters: string[];
   equippedCharacter: string;
   tutorialSeen: boolean;
+  soundOn: boolean;
 
   // Cosmetic & Config States (v3)
   providerSkin: ProviderSkin;
@@ -123,6 +125,7 @@ interface GameStore {
   unlockCharacter: (id: string, cost: number) => boolean;
   equipCharacter: (id: string) => void;
   markTutorialSeen: () => void;
+  setSoundOn: (v: boolean) => void;
 
   // Persistence
   loadBestScores: () => void;
@@ -147,6 +150,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   unlockedCharacters: ['nimbus', 'pings'],
   equippedCharacter: 'nimbus',
   tutorialSeen: false,
+  soundOn: true,
 
   // Cosmetic & Config States (v3)
   providerSkin: 'generic',
@@ -237,12 +241,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set((state) => ({
       edges: addEdge({ ...params, type: 'conduitEdge' }, state.edges),
     }));
+    playSound('connect');
   },
 
   // ── Node actions ─────────────────────────────────────────────────────────
   addNode: (type, position) => {
     const node = makeNode(type, position);
     set((state) => ({ nodes: [...state.nodes, node] }));
+    playSound('place');
   },
 
   removeNode: (id) => {
@@ -287,11 +293,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // final metrics/grade reveal still lands when the run resolves.
     const result = simulate(nodes, edges, constraints);
     set({ isSimulating: true, result: null, liveResult: result });
+    playSound('run');
 
     // Hold the simulating state long enough for the Pings to stream the
     // conduits (the Run choreography) before metrics resolve.
     setTimeout(() => {
       set({ result, isSimulating: false, liveResult: null });
+      playSound(result.grade === 'C' || result.grade === 'F' ? 'fail' : 'success');
 
       if (mode === 'scenario' && scenario) {
         get().saveBestScore(scenario.id, result.score);
@@ -325,6 +333,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const raw = localStorage.getItem('cloudcraft-best-scores');
       const rawLoad = localStorage.getItem('cloudcraft-best-load');
       const unlockedRaw = localStorage.getItem('cloudcraft-unlocked');
+      const soundOn = localStorage.getItem('cloudcraft-sound') !== '0';
+      setSoundEnabled(soundOn);
       set({
         bestScores: raw ? JSON.parse(raw) : {},
         bestSandboxLoad: rawLoad ? JSON.parse(rawLoad) : {},
@@ -332,6 +342,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         unlockedCharacters: unlockedRaw ? JSON.parse(unlockedRaw) : ['nimbus', 'pings'],
         equippedCharacter: localStorage.getItem('cloudcraft-equipped') || 'nimbus',
         tutorialSeen: localStorage.getItem('cloudcraft-tutorial') === '1',
+        soundOn,
       });
     } catch {
       // ignore
@@ -366,6 +377,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       } catch { /* ignore */ }
       return { unlockedCharacters, coins };
     });
+    if (ok) playSound('unlock');
     return ok;
   },
 
@@ -380,5 +392,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   markTutorialSeen: () => {
     try { localStorage.setItem('cloudcraft-tutorial', '1'); } catch { /* ignore */ }
     set({ tutorialSeen: true });
+  },
+
+  setSoundOn: (v) => {
+    setSoundEnabled(v);
+    try { localStorage.setItem('cloudcraft-sound', v ? '1' : '0'); } catch { /* ignore */ }
+    set({ soundOn: v });
   },
 }));
