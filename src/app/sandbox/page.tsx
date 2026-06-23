@@ -11,7 +11,9 @@ import { ConfigPanel } from '@/components/panels/ConfigPanel';
 import { CosmeticPanel } from '@/components/panels/CosmeticPanel';
 import { CastBar } from '@/components/cast/CastRenderer';
 import { TutorialCoach } from '@/components/canvas/TutorialCoach';
+import { StressPanel } from '@/components/canvas/StressPanel';
 import { FailureVignette } from '@/components/cast/FailureVignette';
+import { PillButton } from '@/components/ui/PillButton';
 import { useGameStore } from '@/store/useGameStore';
 import { PRESETS } from '@/lib/presets';
 import {
@@ -21,10 +23,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Compass, Palette as PaletteIcon } from 'lucide-react';
+import { Compass, Palette as PaletteIcon, Gauge } from 'lucide-react';
 
 export default function SandboxPage() {
-  const { preset, startSandbox, loadBestScores, nodes, result, paletteTheme, sceneBg } = useGameStore();
+  const { preset, startSandbox, loadBestScores, nodes, result, paletteTheme, sceneBg, runStressTest, isStressing } = useGameStore();
 
   const [showCosmetics, setShowCosmetics] = useState(false);
   const [showVignette, setShowVignette] = useState(false);
@@ -122,6 +124,15 @@ export default function SandboxPage() {
               </div>
 
               <LoadDial />
+
+              {/* Stress test — ramp load to the breaking point */}
+              <div className="p-3.5" style={{ borderBottom: '1px solid var(--color-panel-line)' }}>
+                <PillButton variant="secondary" size="sm" block icon={<Gauge size={14} />} onClick={runStressTest} disabled={isStressing}>
+                  {isStressing ? 'Stress testing…' : 'Stress test'}
+                </PillButton>
+              </div>
+
+              <StressPanel />
             </motion.div>
           )}
         </AnimatePresence>

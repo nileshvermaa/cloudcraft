@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { CATALOG } from '@/lib/catalog';
 import { validateConnection } from '@/lib/rules';
 import { simulate } from '@/lib/simulation/engine';
-import { genId } from '@/lib/utils';
+import { genId, formatRps } from '@/lib/utils';
 import { playSound, setSoundEnabled } from '@/lib/sound';
 import type {
   GameMode,
@@ -25,6 +25,7 @@ import type {
   SerializedNode,
   SerializedEdge,
   SimResult,
+  StressResult,
   ProviderSkin,
   PaletteTheme,
   SceneBg,
@@ -78,6 +79,9 @@ interface GameStore {
   /** Transient result used to drive the run choreography before the final reveal. */
   liveResult: SimResult | null;
   isSimulating: boolean;
+  /** Sandbox stress-test sweep result + in-progress flag. */
+  stressResult: StressResult | null;
+  isStressing: boolean;
   bestScores: Record<string, number>;
   bestSandboxLoad: Record<string, number>;
 
@@ -119,6 +123,7 @@ interface GameStore {
 
   // Simulation
   runSimulation: () => void;
+  runStressTest: () => void;
   reset: () => void;
 
   // Progression actions
@@ -142,6 +147,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   result: null,
   liveResult: null,
   isSimulating: false,
+  stressResult: null,
+  isStressing: false,
   bestScores: {},
   bestSandboxLoad: {},
 
@@ -181,6 +188,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       edges: [],
       result: null,
       liveResult: null,
+      stressResult: null,
       isSimulating: false,
       selectedNodeId: null,
     });
@@ -202,13 +210,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       edges,
       result: null,
       liveResult: null,
+      stressResult: null,
       isSimulating: false,
       selectedNodeId: null,
     });
   },
 
   // ── Sandbox load dial ────────────────────────────────────────────────────
-  setLoad: (rps) => set({ loadRps: rps, result: null, liveResult: null }),
+  setLoad: (rps) => set({ loadRps: rps, result: null, liveResult: null, stressResult: null }),
 
   // ── React Flow handlers ──────────────────────────────────────────────────
   onNodesChange: (changes) => {
@@ -316,6 +325,54 @@ export const useGameStore = create<GameStore>((set, get) => ({
         toast.success('Simulation complete.');
       }
     }, 1600);
+  },
+
+  // ── Stress test (sandbox): ramp load to find the breaking point ───────────
+  runStressTest: () => {
+    const { nodes, edges, mode, preset, bestSandboxLoad } = get();
+    if (mode !== 'sandbox') return;
+
+    const base = {
+      maxLatencyMs: Infinity,
+      budgetUsd: Infinity,
+      slaAvailability: 0,
+      readShare: preset?.readShare ?? 0.7,
+      staticShare: preset?.staticShare ?? 0.2,
+      requiresHA: false,
+      requiresPersistence: false,
+    };
+    const LEVELS = [100, 250, 500, 1_000, 2_500, 5_000, 10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000];
+
+    set({ isStressing: true, stressResult: null, result: null, liveResult: null });
+    playSound('run');
+
+    setTimeout(() => {
+      const points = LEVELS.map((rps) => {
+        const r = simulate(nodes, edges, { ...base, targetRps: rps });
+        return { rps, servedRps: r.servedRps, errorRatePct: r.errorRatePct };
+      });
+      // Highest contiguous load served with ~0 errors.
+      let breakingPoint = 0;
+      for (const p of points) {
+        if (p.errorRatePct < 0.5) breakingPoint = p.rps;
+        else break;
+      }
+      const shownLoad = Math.max(breakingPoint, LEVELS[0]);
+      const result = simulate(nodes, edges, { ...base, targetRps: shownLoad });
+
+      set({ isStressing: false, stressResult: { points, breakingPoint }, result, loadRps: shownLoad });
+
+      const presetId = preset?.id ?? 'freestyle';
+      if (breakingPoint > (bestSandboxLoad[presetId] ?? 0)) {
+        set((s) => {
+          const updated = { ...s.bestSandboxLoad, [presetId]: breakingPoint };
+          try { localStorage.setItem('cloudcraft-best-load', JSON.stringify(updated)); } catch { /* ignore */ }
+          return { bestSandboxLoad: updated };
+        });
+      }
+      playSound(breakingPoint > 0 ? 'success' : 'fail');
+      toast.success(breakingPoint > 0 ? `Survives up to ${formatRps(breakingPoint)}` : 'Collapses under load — add capacity.');
+    }, 900);
   },
 
   reset: () => {

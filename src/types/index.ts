@@ -117,3 +117,16 @@ export interface SimResult {
   score: number;
   grade: 'S' | 'A' | 'B' | 'C' | 'F';
 }
+
+/** One sample in a stress-test load sweep. */
+export interface StressPoint {
+  rps: number;
+  servedRps: number;
+  errorRatePct: number;
+}
+
+/** Result of ramping load to find an architecture's breaking point (sandbox). */
+export interface StressResult {
+  points: StressPoint[];
+  breakingPoint: number; // highest offered load served with ~0 errors
+}
