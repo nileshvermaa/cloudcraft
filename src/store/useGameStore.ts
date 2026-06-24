@@ -14,7 +14,8 @@ import { toast } from 'sonner';
 import { CATALOG } from '@/lib/catalog';
 import { validateConnection } from '@/lib/rules';
 import { simulate } from '@/lib/simulation/engine';
-import { genId } from '@/lib/utils';
+import { detectSpofs } from '@/lib/simulation/availability';
+import { genId, formatRps } from '@/lib/utils';
 import { playSound, setSoundEnabled } from '@/lib/sound';
 import type {
   GameMode,
@@ -25,6 +26,8 @@ import type {
   SerializedNode,
   SerializedEdge,
   SimResult,
+  StressResult,
+  ChaosResult,
   ProviderSkin,
   PaletteTheme,
   SceneBg,
@@ -78,6 +81,12 @@ interface GameStore {
   /** Transient result used to drive the run choreography before the final reveal. */
   liveResult: SimResult | null;
   isSimulating: boolean;
+  /** Sandbox stress-test sweep result + in-progress flag. */
+  stressResult: StressResult | null;
+  isStressing: boolean;
+  /** Chaos / fault-injection result + in-progress flag. */
+  chaosResult: ChaosResult | null;
+  isChaosRunning: boolean;
   bestScores: Record<string, number>;
   bestSandboxLoad: Record<string, number>;
 
@@ -93,6 +102,8 @@ interface GameStore {
   paletteTheme: PaletteTheme;
   sceneBg: SceneBg;
   selectedNodeId: string | null;
+  /** Tap-to-connect: the node a touch connection is being drawn from. */
+  connectingFrom: string | null;
 
   setProviderSkin: (skin: ProviderSkin) => void;
   setPaletteTheme: (theme: PaletteTheme) => void;
@@ -117,8 +128,15 @@ interface GameStore {
   removeNode: (id: string) => void;
   updateUnits: (id: string, units: number) => void;
 
+  // Tap-to-connect (touch-friendly wiring)
+  startConnect: (id: string) => void;
+  completeConnect: (targetId: string) => void;
+  cancelConnect: () => void;
+
   // Simulation
   runSimulation: () => void;
+  runStressTest: () => void;
+  runChaos: () => void;
   reset: () => void;
 
   // Progression actions
@@ -142,6 +160,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   result: null,
   liveResult: null,
   isSimulating: false,
+  stressResult: null,
+  isStressing: false,
+  chaosResult: null,
+  isChaosRunning: false,
   bestScores: {},
   bestSandboxLoad: {},
 
@@ -157,6 +179,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   paletteTheme: 'candy',
   sceneBg: 'vanilla',
   selectedNodeId: null,
+  connectingFrom: null,
 
   setProviderSkin: (skin) => set({ providerSkin: skin }),
   setPaletteTheme: (theme) => set({ paletteTheme: theme }),
@@ -181,8 +204,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       edges: [],
       result: null,
       liveResult: null,
+      stressResult: null,
+      chaosResult: null,
       isSimulating: false,
       selectedNodeId: null,
+      connectingFrom: null,
     });
   },
 
@@ -202,13 +228,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       edges,
       result: null,
       liveResult: null,
+      stressResult: null,
+      chaosResult: null,
       isSimulating: false,
       selectedNodeId: null,
+      connectingFrom: null,
     });
   },
 
   // ── Sandbox load dial ────────────────────────────────────────────────────
-  setLoad: (rps) => set({ loadRps: rps, result: null, liveResult: null }),
+  setLoad: (rps) => set({ loadRps: rps, result: null, liveResult: null, stressResult: null, chaosResult: null }),
 
   // ── React Flow handlers ──────────────────────────────────────────────────
   onNodesChange: (changes) => {
@@ -272,6 +301,34 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }));
   },
 
+  // ── Tap-to-connect ─────────────────────────────────────────────────────────
+  startConnect: (id) => set({ connectingFrom: id }),
+  cancelConnect: () => set({ connectingFrom: null }),
+  completeConnect: (targetId) => {
+    const { connectingFrom, nodes, edges } = get();
+    if (!connectingFrom || connectingFrom === targetId) {
+      set({ connectingFrom: null });
+      return;
+    }
+    const sourceNode = nodes.find((n) => n.id === connectingFrom);
+    const targetNode = nodes.find((n) => n.id === targetId);
+    if (!sourceNode || !targetNode) {
+      set({ connectingFrom: null });
+      return;
+    }
+    const error = validateConnection(sourceNode.data.type, targetNode.data.type, connectingFrom, targetId, edges);
+    if (error) {
+      toast.error(error, { duration: 4000 });
+      set({ connectingFrom: null });
+      return;
+    }
+    set((state) => ({
+      edges: addEdge({ id: genId(), source: connectingFrom, target: targetId, type: 'conduitEdge' }, state.edges),
+      connectingFrom: null,
+    }));
+    playSound('connect');
+  },
+
   // ── Simulation ───────────────────────────────────────────────────────────
   runSimulation: () => {
     const { nodes, edges, mode, scenario, loadRps, preset, bestSandboxLoad } = get();
@@ -292,7 +349,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // panic, overload rings) can be driven by it via `liveResult`, while the
     // final metrics/grade reveal still lands when the run resolves.
     const result = simulate(nodes, edges, constraints);
-    set({ isSimulating: true, result: null, liveResult: result });
+    set({ isSimulating: true, result: null, liveResult: result, stressResult: null, chaosResult: null });
     playSound('run');
 
     // Hold the simulating state long enough for the Pings to stream the
@@ -316,6 +373,110 @@ export const useGameStore = create<GameStore>((set, get) => ({
         toast.success('Simulation complete.');
       }
     }, 1600);
+  },
+
+  // ── Stress test (sandbox): ramp load to find the breaking point ───────────
+  runStressTest: () => {
+    const { nodes, edges, mode, preset, bestSandboxLoad } = get();
+    if (mode !== 'sandbox') return;
+
+    const base = {
+      maxLatencyMs: Infinity,
+      budgetUsd: Infinity,
+      slaAvailability: 0,
+      readShare: preset?.readShare ?? 0.7,
+      staticShare: preset?.staticShare ?? 0.2,
+      requiresHA: false,
+      requiresPersistence: false,
+    };
+    const LEVELS = [100, 250, 500, 1_000, 2_500, 5_000, 10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000];
+
+    set({ isStressing: true, stressResult: null, result: null, liveResult: null, chaosResult: null });
+    playSound('run');
+
+    setTimeout(() => {
+      const points = LEVELS.map((rps) => {
+        const r = simulate(nodes, edges, { ...base, targetRps: rps });
+        return { rps, servedRps: r.servedRps, errorRatePct: r.errorRatePct };
+      });
+      // Highest contiguous load served with ~0 errors.
+      let breakingPoint = 0;
+      for (const p of points) {
+        if (p.errorRatePct < 0.5) breakingPoint = p.rps;
+        else break;
+      }
+      const shownLoad = Math.max(breakingPoint, LEVELS[0]);
+      const result = simulate(nodes, edges, { ...base, targetRps: shownLoad });
+
+      set({ isStressing: false, stressResult: { points, breakingPoint }, result, loadRps: shownLoad });
+
+      const presetId = preset?.id ?? 'freestyle';
+      if (breakingPoint > (bestSandboxLoad[presetId] ?? 0)) {
+        set((s) => {
+          const updated = { ...s.bestSandboxLoad, [presetId]: breakingPoint };
+          try { localStorage.setItem('cloudcraft-best-load', JSON.stringify(updated)); } catch { /* ignore */ }
+          return { bestSandboxLoad: updated };
+        });
+      }
+      playSound(breakingPoint > 0 ? 'success' : 'fail');
+      toast.success(breakingPoint > 0 ? `Survives up to ${formatRps(breakingPoint)}` : 'Collapses under load — add capacity.');
+    }, 900);
+  },
+
+  // ── Chaos / fault injection: kill one node, re-run, test resilience ────────
+  runChaos: () => {
+    const { nodes, edges, mode, scenario, loadRps, preset } = get();
+    const targetRps = mode === 'scenario' && scenario ? scenario.targetRps : loadRps;
+    const constraints = scenario ?? {
+      targetRps,
+      maxLatencyMs: Infinity,
+      budgetUsd: Infinity,
+      slaAvailability: 0,
+      readShare: preset?.readShare ?? 0.7,
+      staticShare: preset?.staticShare ?? 0.2,
+      requiresHA: false,
+      requiresPersistence: false,
+    };
+
+    // Victim: a single point of failure if one exists, else a key workhorse node.
+    const WORKHORSE: ServiceType[] = [
+      'computeInstance', 'autoScalingGroup', 'serverless', 'containerCluster', 'gpuInstance',
+      'loadBalancer', 'apiGateway', 'sqlPrimary', 'nosqlDb', 'cache',
+    ];
+    const spofs = detectSpofs(nodes);
+    const victim = nodes.find((n) => n.id === spofs[0]) ?? nodes.find((n) => WORKHORSE.includes(n.data.type));
+    if (!victim) {
+      toast.warning('Add some infrastructure first — nothing to knock out.');
+      return;
+    }
+
+    const normal = simulate(nodes, edges, constraints);
+    const survivingNodes = nodes.filter((n) => n.id !== victim.id);
+    const survivingEdges = edges.filter((e) => e.source !== victim.id && e.target !== victim.id);
+    const downed = simulate(survivingNodes, survivingEdges, constraints);
+    const resilient = downed.errorRatePct < 5 && downed.servedRps >= normal.servedRps * 0.9;
+    const label = String(victim.data.label);
+
+    set({ isChaosRunning: true, result: null, liveResult: null, stressResult: null, chaosResult: null });
+    playSound('run');
+
+    setTimeout(() => {
+      set({
+        isChaosRunning: false,
+        liveResult: downed,
+        chaosResult: {
+          downedNodeId: victim.id,
+          downedNodeLabel: label,
+          normalServedRps: normal.servedRps,
+          survivedRps: downed.servedRps,
+          errorRatePct: downed.errorRatePct,
+          resilient,
+        },
+      });
+      playSound(resilient ? 'success' : 'fail');
+      if (resilient) toast.success(`Survived losing ${label}! Redundancy held.`);
+      else toast.error(`${label} was a single point of failure.`);
+    }, 1200);
   },
 
   reset: () => {

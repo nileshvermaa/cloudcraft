@@ -237,6 +237,15 @@
   to { stroke-dashoffset: -20; }
 }
 
+/* Scenario-map road traffic — beans travel the road via offset-path */
+@keyframes road-travel {
+  from { offset-distance: 0%; }
+  to   { offset-distance: 100%; }
+}
+@keyframes road-dash {
+  to { stroke-dashoffset: -28; }
+}
+
 .conduit-animated {
   animation: dash-flow 0.9s linear infinite;
   stroke-dasharray: 8 5;

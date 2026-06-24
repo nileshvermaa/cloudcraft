@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { Link2 } from 'lucide-react';
 import { Toolbar } from './Toolbar';
 import { Palette } from './Palette';
+import { ChaosBanner } from './ChaosBanner';
 import { useGameStore } from '@/store/useGameStore';
 import { cn } from '@/lib/utils';
 
@@ -34,7 +36,19 @@ export function BoardFrame({ title, backHref = '/', themeClass = '', sceneClass 
   };
 
   // Screen-reader summary of the current architecture + last result.
-  const { nodes, edges, result } = useGameStore();
+  const { nodes, edges, result, connectingFrom } = useGameStore();
+
+  // On touch, selecting a tile should reveal its config (open the rail drawer).
+  const selectedId = nodes.find((n) => n.selected)?.id ?? null;
+  const prevSelected = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedId && selectedId !== prevSelected.current) {
+      const raf = requestAnimationFrame(() => setRailOpen(true));
+      prevSelected.current = selectedId;
+      return () => cancelAnimationFrame(raf);
+    }
+    prevSelected.current = selectedId;
+  }, [selectedId]);
   const summary =
     `${nodes.length} tile${nodes.length === 1 ? '' : 's'} placed, ` +
     `${edges.length} connection${edges.length === 1 ? '' : 's'}. ` +
@@ -68,6 +82,21 @@ export function BoardFrame({ title, backHref = '/', themeClass = '', sceneClass 
         <div className={cn('flex-1 h-full relative min-w-0', sceneClass)} role="region" aria-label="Architecture board">
           <div className="sr-only" role="status" aria-live="polite">{summary}</div>
           {children}
+          <ChaosBanner />
+
+          {/* Tap-to-connect hint */}
+          {connectingFrom && (
+            <div
+              className="absolute top-3 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-3.5 py-2 rounded-full pointer-events-none"
+              style={{ background: 'var(--color-panel)', border: '1px solid var(--color-panel-line)', boxShadow: '0 8px 24px rgba(27,23,51,0.14)' }}
+            >
+              <Link2 size={14} style={{ color: '#1DD3A0' }} />
+              <span className="text-[12px] font-semibold" style={{ color: '#1B1733' }}>
+                Tap a tile to wire it
+              </span>
+              <span className="text-[11px]" style={{ color: '#9A92AD' }}>· tap empty space to cancel</span>
+            </div>
+          )}
         </div>
 
         {/* Right rail — static column on lg, right drawer below */}

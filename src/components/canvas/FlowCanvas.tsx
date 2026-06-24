@@ -31,6 +31,7 @@ export function FlowCanvas() {
     onEdgesChange,
     onConnect,
     addNode,
+    cancelConnect,
   } = useGameStore();
 
   const rfInstance = useRef<ReactFlowInstance<Node<ServiceNodeData>, Edge> | null>(null);
@@ -69,6 +70,7 @@ export function FlowCanvas() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onInit={onInit}
+        onPaneClick={cancelConnect}
         onDrop={onDrop}
         onDragOver={onDragOver}
         nodeTypes={nodeTypes}
