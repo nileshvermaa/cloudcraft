@@ -102,6 +102,8 @@ interface GameStore {
   paletteTheme: PaletteTheme;
   sceneBg: SceneBg;
   selectedNodeId: string | null;
+  /** Tap-to-connect: the node a touch connection is being drawn from. */
+  connectingFrom: string | null;
 
   setProviderSkin: (skin: ProviderSkin) => void;
   setPaletteTheme: (theme: PaletteTheme) => void;
@@ -125,6 +127,11 @@ interface GameStore {
   addNode: (type: ServiceType, position: XYPosition) => void;
   removeNode: (id: string) => void;
   updateUnits: (id: string, units: number) => void;
+
+  // Tap-to-connect (touch-friendly wiring)
+  startConnect: (id: string) => void;
+  completeConnect: (targetId: string) => void;
+  cancelConnect: () => void;
 
   // Simulation
   runSimulation: () => void;
@@ -172,6 +179,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   paletteTheme: 'candy',
   sceneBg: 'vanilla',
   selectedNodeId: null,
+  connectingFrom: null,
 
   setProviderSkin: (skin) => set({ providerSkin: skin }),
   setPaletteTheme: (theme) => set({ paletteTheme: theme }),
@@ -200,6 +208,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       chaosResult: null,
       isSimulating: false,
       selectedNodeId: null,
+      connectingFrom: null,
     });
   },
 
@@ -223,6 +232,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       chaosResult: null,
       isSimulating: false,
       selectedNodeId: null,
+      connectingFrom: null,
     });
   },
 
@@ -289,6 +299,34 @@ export const useGameStore = create<GameStore>((set, get) => ({
         n.id === id ? { ...n, data: { ...n.data, units } } : n
       ),
     }));
+  },
+
+  // ── Tap-to-connect ─────────────────────────────────────────────────────────
+  startConnect: (id) => set({ connectingFrom: id }),
+  cancelConnect: () => set({ connectingFrom: null }),
+  completeConnect: (targetId) => {
+    const { connectingFrom, nodes, edges } = get();
+    if (!connectingFrom || connectingFrom === targetId) {
+      set({ connectingFrom: null });
+      return;
+    }
+    const sourceNode = nodes.find((n) => n.id === connectingFrom);
+    const targetNode = nodes.find((n) => n.id === targetId);
+    if (!sourceNode || !targetNode) {
+      set({ connectingFrom: null });
+      return;
+    }
+    const error = validateConnection(sourceNode.data.type, targetNode.data.type, connectingFrom, targetId, edges);
+    if (error) {
+      toast.error(error, { duration: 4000 });
+      set({ connectingFrom: null });
+      return;
+    }
+    set((state) => ({
+      edges: addEdge({ id: genId(), source: connectingFrom, target: targetId, type: 'conduitEdge' }, state.edges),
+      connectingFrom: null,
+    }));
+    playSound('connect');
   },
 
   // ── Simulation ───────────────────────────────────────────────────────────

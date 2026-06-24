@@ -6,7 +6,7 @@ import {
   Globe, Zap, GitMerge, Network, Server, Layers, Cpu,
   Gauge, Database, Table, HardDrive, MessageSquare, Cog, DatabaseBackup,
   Boxes, Search, Activity, Radio, RefreshCw, Calendar, GitBranch,
-  ShieldAlert, Shield, Lock, Key, Eye, FileText, Bell, Route,
+  ShieldAlert, Shield, Lock, Key, Eye, FileText, Bell, Route, Link2, X,
   type LucideIcon,
 } from 'lucide-react';
 import { CATALOG, CATEGORY_COLOR, getNodeLabel } from '@/lib/catalog';
@@ -41,7 +41,7 @@ export const ServiceTile = memo(function ServiceTile({
   selected,
 }: NodeProps & { data: ServiceNodeData }) {
   const spec = CATALOG[data.type as keyof typeof CATALOG];
-  const { removeNode, updateUnits, result, liveResult, chaosResult, providerSkin } = useGameStore();
+  const { removeNode, updateUnits, result, liveResult, chaosResult, providerSkin, connectingFrom, startConnect, completeConnect, cancelConnect } = useGameStore();
   const [hovered, setHovered] = useState(false);
 
   if (!spec) return null;
@@ -66,6 +66,8 @@ export const ServiceTile = memo(function ServiceTile({
   // The Leak appears on an exposed data store (violation strings end with the target's label).
   const showLeak = spec.category === 'data' && (r?.securityViolations ?? []).some((v) => v.endsWith(String(data.label)));
   const isDowned = chaosResult?.downedNodeId === id;
+  const isConnectSource = connectingFrom === id;
+  const isConnectTarget = connectingFrom !== null && connectingFrom !== id;
 
   // Determine ring/glow state class
   const tileStateClass = cn(
@@ -115,13 +117,13 @@ export const ServiceTile = memo(function ServiceTile({
             fill={faces.top}
           />
 
-          {/* Selected — dashed outline in category color */}
-          {selected && (
+          {/* Selected / connect-source — dashed outline in category color */}
+          {(selected || isConnectSource) && (
             <polygon
               points={TOP_FACE}
               fill="none"
               stroke={baseColor}
-              strokeWidth={2}
+              strokeWidth={isConnectSource ? 3 : 2}
               strokeDasharray="4 3"
             />
           )}
@@ -298,15 +300,64 @@ export const ServiceTile = memo(function ServiceTile({
         </div>
       )}
 
-      {/* Delete button — show on hover (not for client) */}
-      {hovered && data.type !== 'client' && (
+      {/* Delete button — show on hover or selection (touch has no hover) */}
+      {(hovered || selected) && data.type !== 'client' && !connectingFrom && (
         <button
-          className="absolute -top-2 -left-2 w-5 h-5 rounded-full bg-[#EF4444] text-white text-[10px] flex items-center justify-center shadow hover:bg-[#DC2626] transition-colors z-10 cursor-pointer"
-          onClick={() => removeNode(id)}
+          className="absolute -top-2.5 -left-2.5 w-7 h-7 rounded-full bg-[#EF4444] text-white flex items-center justify-center shadow-md hover:bg-[#DC2626] transition-colors z-30 cursor-pointer"
+          onClick={(e) => { e.stopPropagation(); removeNode(id); }}
+          onPointerDown={(e) => e.stopPropagation()}
           title="Remove"
         >
-          ×
+          <X size={14} strokeWidth={3} />
         </button>
+      )}
+
+      {/* Connect button — tap to start a wire (touch-friendly), hidden while connecting */}
+      {!connectingFrom && (
+        <button
+          className="absolute z-30 flex items-center justify-center rounded-full transition-transform active:scale-90"
+          style={{
+            top: 30, right: -12, width: 28, height: 28,
+            background: baseColor, color: '#fff', border: '2px solid #fff',
+            boxShadow: '0 2px 6px rgba(27,23,51,0.28)',
+          }}
+          onClick={(e) => { e.stopPropagation(); startConnect(id); }}
+          onPointerDown={(e) => e.stopPropagation()}
+          title="Tap, then tap another tile to wire them"
+        >
+          <Link2 size={14} strokeWidth={2.5} />
+        </button>
+      )}
+
+      {/* Connect overlay — while wiring, the whole tile is a big tap target */}
+      {connectingFrom && (
+        <div
+          className="absolute inset-0 z-40 rounded-xl flex items-start justify-center"
+          style={{ cursor: 'pointer' }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isConnectSource) cancelConnect();
+            else completeConnect(id);
+          }}
+        >
+          {isConnectTarget && (
+            <span
+              className="mt-7 text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: baseColor, color: '#fff', boxShadow: '0 2px 6px rgba(27,23,51,0.25)' }}
+            >
+              connect
+            </span>
+          )}
+          {isConnectSource && (
+            <span
+              className="mt-7 text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: '#FFF', color: '#9A92AD', border: '1px solid var(--color-panel-line)' }}
+            >
+              tap to cancel
+            </span>
+          )}
+        </div>
       )}
 
       {/* React Flow handles — positioned at tile's left/right vertices */}
