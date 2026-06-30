@@ -83,6 +83,8 @@ export interface Scenario extends SimulationConstraints {
   id: string;
   title: string;
   brief: string;
+  /** A short nudge toward the intended fix, shown in the mission card. */
+  hint?: string;
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
   startingArchitecture?: { nodes: SerializedNode[]; edges: SerializedEdge[] };
 }

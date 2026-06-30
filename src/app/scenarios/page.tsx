@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
-import { ChevronLeft, Star, CheckCircle2, Play, Map as MapIcon } from 'lucide-react';
+import { ChevronLeft, Star, CheckCircle2, Play, Map as MapIcon, Lightbulb } from 'lucide-react';
 import { SCENARIOS } from '@/lib/scenarios';
 import { useGameStore } from '@/store/useGameStore';
 import { Nimbus } from '@/components/cast/CastRenderer';
@@ -391,6 +391,25 @@ export default function ScenariosPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Requirements + hint */}
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {selectedScenario.requiresHA && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FFF3D6', color: '#9A6B00' }}>HA required</span>
+                )}
+                {selectedScenario.requiresPersistence && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#E6ECFF', color: '#2A3FB8' }}>Needs a database</span>
+                )}
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FFFCF5', color: '#5B5470', border: '1px solid var(--color-panel-line)' }}>{Math.round(selectedScenario.readShare * 100)}% reads</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#FFFCF5', color: '#5B5470', border: '1px solid var(--color-panel-line)' }}>{Math.round(selectedScenario.staticShare * 100)}% static</span>
+              </div>
+
+              {selectedScenario.hint && (
+                <div className="flex items-start gap-2 rounded-xl px-3 py-2 mb-4" style={{ background: '#FFF7D6', border: '1px solid #F2D98A' }}>
+                  <Lightbulb size={14} style={{ color: '#9A6B00' }} className="mt-0.5 flex-shrink-0" />
+                  <p className="text-[12px] leading-snug" style={{ color: '#7A5A00' }}>{selectedScenario.hint}</p>
+                </div>
+              )}
 
               <div className="flex justify-end">
                 <PillButton variant="primary" size="md" icon={<Play size={16} fill="currentColor" />} onClick={handleStart}>

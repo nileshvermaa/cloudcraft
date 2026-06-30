@@ -9,7 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useReactFlow } from '@xyflow/react';
-import { CATALOG, CATEGORY_COLOR, CATEGORY_LABEL, CATEGORIES, PALETTE_ORDER, getNodeLabel } from '@/lib/catalog';
+import { CATALOG, CATEGORY_COLOR, CATEGORY_LABEL, CATEGORIES, PALETTE_ORDER, getNodeLabel, SERVICE_DESC } from '@/lib/catalog';
 import { tileFaces } from './nodes/tile-geometry';
 import type { ServiceCategory, ServiceType } from '@/types';
 import { cn } from '@/lib/utils';
@@ -122,7 +122,7 @@ function PaletteItem({ type, onPlace }: { type: ServiceType; onPlace?: () => voi
         tabIndex={0}
         title={`Add ${displayLabel}`}
         className={cn(
-          'group flex items-center gap-2 pl-2 pr-1.5 py-1.5 rounded-xl',
+          'group flex items-start gap-2 pl-2 pr-1.5 py-2 rounded-xl',
           'bg-[#FFFCF5] border border-[var(--color-panel-line)]',
           'cursor-pointer select-none',
           'transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0',
@@ -139,7 +139,10 @@ function PaletteItem({ type, onPlace }: { type: ServiceType; onPlace?: () => voi
           <div className="text-[12.5px] font-bold truncate leading-tight" style={{ color: '#1B1733' }}>
             {displayLabel}
           </div>
-          <div className="text-[10px] mt-0.5 leading-none" style={{ color: '#9A92AD', fontFamily: 'var(--font-jetbrains)' }}>
+          <p className="text-[10.5px] leading-snug mt-0.5 line-clamp-2" style={{ color: '#7A7290' }}>
+            {SERVICE_DESC[type]}
+          </p>
+          <div className="text-[10px] mt-1 leading-none" style={{ color: '#9A92AD', fontFamily: 'var(--font-jetbrains)' }}>
             {spec.costPerMonth === 0 ? 'Free' : `$${spec.costPerMonth}${spec.scalable ? '/u' : ''}`}
             {' · '}
             {formatCap(spec.capacityRps)} rps

@@ -401,6 +401,45 @@ export const CATEGORIES: ServiceCategory[] = [
   'source', 'edge', 'networking', 'compute', 'data', 'async', 'security', 'observability',
 ];
 
+/** One-line "what it does / when to use it" blurb shown in the palette. */
+export const SERVICE_DESC: Record<ServiceType, string> = {
+  client:           'The users hitting your system — every request starts here.',
+  cdn:              'Caches static files at the edge, near users. Cuts latency for images, video and JS/CSS.',
+  apiGateway:       'A single front door that routes, authenticates and throttles API traffic.',
+  dns:              'Resolves your domain to an address — the very first hop of every request.',
+  loadBalancer:     'Spreads traffic across many compute nodes so no single box gets overwhelmed.',
+  rateLimiter:      'Caps requests per client to fend off abuse and shield what is downstream.',
+  computeInstance:  'A single server running your app. Simple, but a single point of failure (~2k rps).',
+  autoScalingGroup: 'A pool of servers that grows and shrinks with load — redundant by design.',
+  serverless:       'Functions that scale to zero and burst on demand. Great for spiky traffic.',
+  containerCluster: 'Orchestrated containers that autoscale — flexible compute for bigger apps.',
+  edgeFunction:     'Tiny functions that run at the edge, close to users, for ultra-low latency.',
+  gpuInstance:      'GPU-backed compute for ML inference, transcoding and heavy number-crunching.',
+  cache:            'In-memory store (Redis) for hot data — absorbs read load off the database.',
+  sqlPrimary:       'Relational source of truth. Strong consistency, but limited write throughput.',
+  sqlReplica:       'Read-only copies of the SQL primary — scale reads without touching writes.',
+  nosqlDb:          'Key-value / document store that scales reads and writes very wide.',
+  objectStorage:    'Cheap, durable blob storage for files, images, uploads and backups.',
+  searchIndex:      'Full-text search engine for fast queries over large datasets.',
+  timeSeriesDb:     'Built for metrics and timestamped data at very high write rates.',
+  dataWarehouse:    'Columnar store for big analytical queries — slow, not for live traffic.',
+  blockStorage:     'Fast SSD volumes attached to compute — low-latency persistent disk.',
+  messageQueue:     'Buffers work for later — decouples producers from slow consumers.',
+  worker:           'Background consumer that drains a queue and does slow work off the request path.',
+  pubSub:           'Fan-out event bus — one message delivered to many subscribers.',
+  streamProcessor:  'Crunches high-volume event streams in real time.',
+  scheduler:        'Runs jobs on a cron schedule — cleanups, reports, nightly batches.',
+  workflowOrchestrator: 'Coordinates multi-step, long-running workflows with retries.',
+  waf:              'Web app firewall — blocks malicious requests before they reach your app.',
+  ddosProtection:   'Absorbs and filters volumetric attacks at the edge.',
+  authService:      'Handles login, tokens and identity — gate private data behind it.',
+  secretsManager:   'Securely stores API keys, passwords and certificates.',
+  monitoring:       'Dashboards and metrics so you can see what your system is doing.',
+  logging:          'Centralised logs for debugging and audit trails.',
+  alerting:         'Pages the on-call crew the moment something crosses a threshold.',
+  tracing:          'Follows one request across services to find the slow hop.',
+};
+
 
 export const PROVIDER_LABELS: Record<ProviderSkin, Partial<Record<ServiceType, string>>> = {
   generic: {},  // fallback: use catalog spec.label
